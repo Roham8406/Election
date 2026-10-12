@@ -1,0 +1,44 @@
+name: election-system
+
+services:
+  # 1. PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: election-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secretpassword
+      POSTGRES_DB: electiondb
+    ports:
+      - "5434:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  # 2. Node.js Backend API
+  backend:
+    build: 
+      context: ./backend
+    container_name: election-backend
+    restart: unless-stopped
+    environment:
+      - PORT=3000
+      - DATABASE_URL=postgres://admin:secretpassword@db:5434/electiondb
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+
+  # 3. Vue.js Frontend
+  frontend:
+    build:
+      context: ./frontend
+    container_name: election-frontend
+    restart: unless-stopped
+    ports:
+      - "8080:81"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:

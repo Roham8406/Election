@@ -1,0 +1,420 @@
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700&display=swap');
+
+:root {
+  /* Retaining the bright cream and traditional red/gold palette */
+  --text: #4a3b32;
+  --text-h: #8b1515; 
+  --bg: #fdf8eb; 
+  --bg-h: #ded5c5;
+  --border: #d4a34b; 
+  --border-light: #d4a34ba0;
+  --code-bg: #f4e8d3;
+  --accent: #b22222; 
+  --accent-bg: rgba(178, 34, 34, 0.08);
+  --accent-border: rgba(212, 163, 75, 0.8);
+  --social-bg: rgba(244, 232, 211, 0.5);
+  
+  /* Softer, more modern shadow */
+  --shadow:
+    rgba(139, 21, 21, 0.08) 0 12px 24px -4px, rgba(139, 21, 21, 0.04) 0 4px 8px -2px;
+
+  --sans: 'Vazirmatn', system-ui, '-apple-system', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --heading: 'Vazirmatn', system-ui, '-apple-system', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --mono: ui-monospace, Consolas, monospace;
+
+  font: 18px/150% var(--sans);
+  letter-spacing: 0.2px;
+  color-scheme: light dark;
+  color: var(--text);
+  background: var(--bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  direction: rtl;
+
+  @media (max-width: 1024px) {
+    font-size: 16px;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text: #e8dbce;
+    --text-h: #f0c365;
+    --bg: #2a1111;
+    --bg-h: #533f1b;
+    --border: #8b3a3a;
+    --border-light: #8b3a3aa0;
+    --code-bg: #3d1c1c;
+    --accent: #d4a34b;
+    --accent-bg: rgba(212, 163, 75, 0.15);
+    --accent-border: rgba(212, 163, 75, 0.5);
+    --social-bg: rgba(61, 28, 28, 0.5);
+    --shadow:
+      rgba(0, 0, 0, 0.4) 0 12px 24px -4px, rgba(0, 0, 0, 0.2) 0 4px 8px -2px;
+  }
+
+  #social .button-icon {
+    filter: invert(1) brightness(2);
+  }
+}
+
+body {
+  margin: 0;
+}
+
+h1, h2 {
+  font-family: var(--heading);
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+h1 {
+  font-size: 56px;
+  letter-spacing: -1px;
+  margin: 32px 0;
+  @media (max-width: 1024px) {
+    font-size: 36px;
+    margin: 20px 0;
+  }
+}
+
+h2 {
+  font-size: 24px;
+  line-height: 120%;
+  margin: 0 0 12px;
+  @media (max-width: 1024px) {
+    font-size: 20px;
+  }
+}
+
+p {
+  margin: 0;
+}
+
+code, .counter {
+  font-family: var(--mono);
+  display: inline-flex;
+  border-radius: 6px;
+  color: var(--text-h);
+}
+
+code {
+  font-size: 15px;
+  line-height: 135%;
+  padding: 4px 8px;
+  background: var(--code-bg);
+}
+
+/* --------------------------------------
+   Global Page Layout
+--------------------------------------- */
+.page-container {
+  text-align: center;
+  margin-top: 50px;
+  font-family: var(--sans);
+  padding: 0 20px 40px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+}
+
+/* --------------------------------------
+   Typography & Spacing
+--------------------------------------- */
+.subtitle {
+  font-size: 1rem;
+  color: var(--text);
+  opacity: 0.9;
+  margin-bottom: 24px;
+}
+.text-error {
+  color: #c92a2a;
+}
+.text-error-large {
+  color: #c92a2a;
+  font-size: 1.2rem;
+  margin-top: 20px;
+  font-weight: bold;
+}
+.text-success {
+  color: #2b8a3e;
+  margin-bottom: 20px;
+}
+.text-dark {
+  color: var(--text-h);
+  font-family: var(--heading);
+}
+.text-muted {
+  color: var(--text);
+  opacity: 0.9;
+}
+.mt-15 { margin-top: 15px; }
+.mt-20 { margin-top: 20px; }
+
+/* --------------------------------------
+   Form Elements
+--------------------------------------- */
+.input-field {
+  margin: 8px 5px;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  width: 100%;
+  max-width: 280px;
+  box-sizing: border-box;
+}
+.input-field:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+/* --------------------------------------
+   Buttons
+--------------------------------------- */
+button {
+  font-family: var(--sans);
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  padding: 12px 28px;
+  cursor: pointer;
+  margin-top: 15px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  width: 100%;
+  max-width: 280px;
+}
+.btn-primary:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+.btn-danger {
+  background: #a51c1c; 
+  color: #fff;
+  padding: 10px 24px;
+  margin-bottom: 24px;
+  cursor: pointer;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+}
+.btn-success {
+  background: var(--border);
+  color: #fff;
+  padding: 10px 24px;
+  cursor: pointer;
+  margin-top: 15px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+}
+.btn-secondary {
+  background: var(--bg-h);
+  color: var(--text-h);
+  padding: 10px 24px;
+  margin-bottom: 24px;
+  cursor: pointer;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+}
+.btn-text {
+  background: none;
+  border: none;
+  color: var(--text);
+  opacity: 0.8;
+  font-size: 0.9rem;
+  margin-top: 20px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.btn-text:hover {
+  color: var(--accent);
+  opacity: 1;
+  transform: none;
+  box-shadow: none;
+}
+
+/* --------------------------------------
+   Cards & Layout Blocks
+--------------------------------------- */
+/* اضافه شدن کلاس card برای بخش رای‌گیری بر اساس ظاهر تم شما */
+.card {
+  border: 2px solid var(--accent);
+  outline: 2px solid var(--border);
+  outline-offset: -6px;
+  background: var(--bg);
+  padding: 40px 30px;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  width: 100%;
+  max-width: 500px;
+  text-align: center;
+  box-sizing: border-box;
+  margin: 20px auto;
+}
+
+.cert-card {
+  border: 2px solid var(--accent);
+  outline: 2px solid var(--border);
+  outline-offset: -6px;
+  margin: 20px auto;
+  padding: 24px;
+  width: 100%;
+  max-width: 640px;
+  border-radius: 12px;
+  background: var(--bg);
+  box-shadow: var(--shadow);
+  box-sizing: border-box;
+  transition: transform 0.2s ease;
+}
+.cert-card:hover {
+  transform: translateY(-4px);
+}
+
+.detail-card {
+  border: 4px double var(--accent);
+  padding: 40px 30px;
+  border-radius: 16px;
+  max-width: 600px;
+  margin: 0 auto;
+  background: var(--bg);
+  box-shadow: var(--shadow);
+  position: relative;
+}
+.detail-card::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  pointer-events: none;
+}
+
+.validation-card {
+  border: 3px solid #2b8a3e;
+  outline: 2px solid #d4a34b;
+  outline-offset: -8px;
+  padding: 40px 30px;
+  border-radius: 16px;
+  max-width: 500px;
+  margin: 30px auto;
+  background: var(--bg);
+  box-shadow: var(--shadow);
+}
+
+/* --------------------------------------
+   Voting Specifics (Candidates List)
+--------------------------------------- */
+.candidates-list {
+  text-align: right;
+  margin: 20px 0 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.candidate-item {
+  display: flex;
+  align-items: center;
+  padding: 14px 16px;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background-color: var(--bg);
+}
+
+.candidate-item:hover:not(.disabled) {
+  background-color: var(--bg-h);
+  border-color: var(--border);
+}
+
+.candidate-item.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  filter: grayscale(0.5);
+}
+
+.candidate-item input[type="checkbox"] {
+  margin-left: 12px;
+  width: 20px;
+  height: 20px;
+  cursor: inherit;
+  accent-color: var(--accent); /* رنگ چک‌باکس‌ها با تم هماهنگ شد */
+}
+
+/* --------------------------------------
+   Misc
+--------------------------------------- */
+.event-image {
+  max-width: 100%;
+  border-radius: 8px;
+  margin-top: 25px;
+  border: 2px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+.event-card-text {
+  background: linear-gradient(90deg, transparent, var(--border-light), var(--border), var(--border), var(--border), var(--border-light), transparent);
+  padding: 10px 50px;
+  color: white;
+}
+
+/* Vite Default Layout blocks (Preserved from original) */
+.hero { position: relative; }
+.hero .base, .hero .framework, .hero .vite { inset-inline: 0; margin: 0 auto; }
+.hero .base { width: 170px; position: relative; z-index: 0; }
+.hero .framework, .hero .vite { position: absolute; }
+.hero .framework { z-index: 1; top: 34px; height: 28px; transform: perspective(2000px) rotateZ(300deg) rotateX(44deg) rotateY(39deg) scale(1.4); }
+.hero .vite { z-index: 0; top: 107px; height: 26px; width: auto; transform: perspective(2000px) rotateZ(300deg) rotateX(40deg) rotateY(39deg) scale(0.8); }
+
+#app {
+  width: 1126px;
+  max-width: 100%;
+  margin: 0 auto;
+  text-align: center;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+#center {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  place-content: center;
+  place-items: center;
+  flex-grow: 1;
+}
+
+@media (max-width: 1024px) {
+  #center { padding: 32px 20px 24px; gap: 18px; }
+  h1 { font-size: 32px !important; }
+}

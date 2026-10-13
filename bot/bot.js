@@ -3,8 +3,10 @@ const TelegramBot = require('node-telegram-bot-api');
 const { Pool } = require('pg');
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
-const bot = new TelegramBot(token, { polling: true });
-
+const bot = new TelegramBot(token, { 
+    polling: true,
+    baseApiUrl: "https://tapi.bale.ai" 
+});
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL
 });

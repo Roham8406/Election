@@ -2,20 +2,20 @@
 CREATE TABLE IF NOT EXISTS elections (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     title VARCHAR(255) NOT NULL,
-    max_votes INTEGER NOT NULL DEFAULT 5,
+    max_votes INTEGER NOT NULL DEFAULT 5
 );
 
 -- 2. Create the candidates table
 CREATE TABLE IF NOT EXISTS candidates (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     election_id UUID NOT NULL REFERENCES elections(id) ON DELETE CASCADE,
-    name VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL
 );
 
 -- 3. Create the voter hashes table (the manually generated codes)
 CREATE TABLE IF NOT EXISTS voter_hashes (
     hashcode VARCHAR(100) PRIMARY KEY,
-    election_id UUID NOT NULL REFERENCES elections(id) ON DELETE CASCADE,
+    election_id UUID NOT NULL REFERENCES elections(id) ON DELETE CASCADE
 );
 
 -- 4. Create the votes table

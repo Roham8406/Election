@@ -32,7 +32,6 @@ services:
       - db
 
   # 3. Vue.js Frontend
-# 3. Vue.js Frontend
   frontend:
     build:
       context: ./frontend

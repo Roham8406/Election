@@ -27,6 +27,16 @@ CREATE TABLE IF NOT EXISTS votes (
     PRIMARY KEY (hashcode, candidate_id)
 );
 
+CREATE TABLE IF NOT EXISTS voters (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    telegram_id BIGINT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    election_id UUID NOT NULL REFERENCES elections(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    
+    UNIQUE(telegram_id, election_id)
+);
+
 CREATE INDEX idx_candidates_election ON candidates(election_id);
 CREATE INDEX idx_voter_hashes_election ON voter_hashes(election_id);
 CREATE INDEX idx_votes_candidate ON votes(candidate_id);

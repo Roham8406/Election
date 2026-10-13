@@ -1,0 +1,8 @@
+{
+  "name": "election-bot",
+  "main": "bot.js",
+  "dependencies": {
+    "node-telegram-bot-api": "^0.64.0",
+    "pg": "^8.11.3"
+  }
+}

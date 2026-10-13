@@ -43,6 +43,17 @@ services:
       - "8081:80"
     depends_on:
       - backend
-
+  
+  # 4. Telegram Bot
+  bot:
+    build: 
+      context: ./bot
+    container_name: election-bot
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=postgres://admin:secretpassword@db:5432/electiondb
+      - TELEGRAM_BOT_TOKEN=YOUR_TELEGRAM_BOT_TOKEN_HERE
+    depends_on:
+      - db
 volumes:
   pgdata:

@@ -3,12 +3,14 @@ const TelegramBot = require('node-telegram-bot-api');
 const { Pool } = require('pg');
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
-const bot = new TelegramBot(token, { polling: true });
+const bot = new TelegramBot(token, { 
+    polling: true,
+    baseApiUrl: "https://aged-shape-a9f5.roham8406.workers.dev"
+});
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL
 });
 
-// دریافت دستور /start و ارسال پیام Hello
 bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
     bot.sendMessage(chatId, 'Hello! 👋\n\nبرای ثبت‌نام در سامانه رای‌گیری، لطفاً دستور زیر را ارسال کنید:\n/register [نام شما] [آیدی انتخابات]');

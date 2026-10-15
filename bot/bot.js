@@ -11,6 +11,12 @@ const pool = new Pool({
     connectionString: process.env.DATABASE_URL
 });
 
+// دریافت دستور /start و ارسال پیام Hello
+bot.onText(/\/start/, (msg) => {
+    const chatId = msg.chat.id;
+    bot.sendMessage(chatId, 'Hello! 👋\n\nبرای ثبت‌نام در سامانه رای‌گیری، لطفاً دستور زیر را ارسال کنید:\n/register [نام شما] [آیدی انتخابات]');
+});
+
 bot.onText(/\/register/, async (msg) => {
     const chatId = msg.chat.id;
     const text = msg.text.trim();

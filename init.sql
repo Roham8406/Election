@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS voters (
     name VARCHAR(255) NOT NULL,
     election_id UUID NOT NULL REFERENCES elections(id) ON DELETE CASCADE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    allowed BOOLEAN NOT NULL DEFAULT FALSE,
     
     UNIQUE(telegram_id, election_id)
 );

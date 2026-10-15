@@ -5,7 +5,7 @@ const { Pool } = require('pg');
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const bot = new TelegramBot(token, { 
     polling: true,
-    baseApiUrl: "https://aged-shape-a9f5.roham8406.workers.dev"
+    baseApiUrl: process.env.TELEGRAM_BOT_TOKEN
 });
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL

@@ -2,9 +2,27 @@ const express = require('express');
 const cors = require('cors');
 const crypto = require('crypto');
 const { Pool } = require('pg');
+const rateLimit = require('express-rate-limit');
 
 const app = express();
 app.use(express.json());
+
+app.set('trust proxy', 1);
+
+const generalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, 
+    max: 100,
+    message: { error: 'ترافیک شما بیش از حد مجاز است. لطفاً ۱۵ دقیقه دیگر تلاش کنید.' }
+});
+app.use('/api/', generalLimiter);
+
+const strictLimiter = rateLimit({
+    windowMs: 5 * 60 * 1000,
+    max: 5,
+    message: { error: 'تلاش‌های بیش از حد. برای جلوگیری از تقلب، دسترسی شما ۵ دقیقه مسدود شد.' }
+});
+app.use('/api/login', strictLimiter);
+app.use('/api/vote', strictLimiter);
 
 const allowedOrigins = (process.env.ALLOWED_ORIGINS).split(',');
 app.use(cors({

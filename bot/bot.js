@@ -205,18 +205,22 @@ bot.on('callback_query', async (query) => {
         const client = await pool.connect();
         try {
             const votersRes = await client.query('SELECT telegram_id, name FROM voters WHERE election_id = $1 AND allowed = TRUE', [electionId]);
-            const voters = votersRes.rows;
+            let voters = votersRes.rows;
 
             if (voters.length === 0) {
-                return bot.sendMessage(chatId, '❌ هیچ کاربر تایید شده‌ای برای این انتخابات یافت نشد.');
+                return bot.sendMessage(chatId, '❌ هیچ کاربر تایید شده‌ای یافت نشد.');
+            }
+
+            for (let i = voters.length - 1; i > 0; i--) {
+                const j = crypto.randomInt(0, i + 1);
+                [voters[i], voters[j]] = [voters[j], voters[i]];
             }
 
             await client.query('BEGIN');
             let successCount = 0;
 
             for (const voter of voters) {
-                const hashcode = crypto.randomBytes(50).toString('hex').substring(0, 99);                await client.query('INSERT INTO voter_hashes (hashcode, election_id) VALUES ($1, $2)', [hashcode, electionId]);
-
+                const hashcode = crypto.randomBytes(50).toString('hex').substring(0, 98);
                 const msgToVoter = `✅ سلام ${voter.name} عزیز!\n\nزمان رای‌گیری فرا رسیده است.\nکد رای‌گیری اختصاصی شما: \`${hashcode}\`\n\nلطفاً با این کد وارد سایت شوید و رای خود را ثبت کنید.`;
                 
                 try {

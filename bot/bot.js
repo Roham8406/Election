@@ -44,23 +44,6 @@ bot.onText(/\/register/, async (msg) => {
     }
 });
 
-// bot.on('callback_query', async (query) => {
-//     const chatId = query.message.chat.id;
-//     const data = query.data;
-
-//     if (data.startsWith('elec_')) {
-//         const electionId = data.replace('elec_', '');
-        
-//         userSteps[chatId] = {
-//             step: 'AWAITING_NAME',
-//             electionId: electionId
-//         };
-
-//         bot.sendMessage(chatId, '✍️ لطفاً نام و نام‌خانوادگی خود را وارد کنید:');
-        
-//         bot.answerCallbackQuery(query.id); 
-//     }
-// });
 
 bot.on('message', async (msg) => {
     const chatId = msg.chat.id;
@@ -174,7 +157,7 @@ bot.on('callback_query', async (query) => {
             if (!voter.allowed) {
                 await client.query('UPDATE voters SET allowed = TRUE WHERE id = $1', [voterId]);
                  
-                const msgToVoter = `✅ سلام ${voter.name} عزیز!\n\nثبت‌نام شما تایید شد.\nکد رای‌گیری شما: \`${hashcode}\`\n\nلطفاً با این کد وارد سایت شوید.`;
+                const msgToVoter = `✅ سلام ${voter.name} عزیز!\n\nثبت‌نام شما تایید شد.`;
                 await bot.sendMessage(voter.telegram_id, msgToVoter, { parse_mode: 'Markdown' });
 
                 bot.answerCallbackQuery(query.id, { text: `تایید شد و کد برای ${voter.name} ارسال شد.`, show_alert: false });

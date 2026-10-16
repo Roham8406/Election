@@ -87,7 +87,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL;
 
 const elections = ref([]);
 const selectedElectionId = ref('');
@@ -137,6 +137,7 @@ const fetchResults = async (id) => {
     }
   } catch (err) {
     error.value = 'خطا در ارتباط با سرور بک‌ند.';
+    console.log(err.message);
   } finally {
     loadingResults.value = false;
   }

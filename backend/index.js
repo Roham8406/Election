@@ -248,7 +248,7 @@ app.get('/api/results/:election_id', async (req, res) => {
 app.get('/api/elections', async (req, res) => {
     const client = await pool.connect();
     try {
-        const result = await client.query('SELECT id, title FROM elections ORDER BY created_at DESC');
+        const result = await client.query('SELECT id, title FROM elections');
         res.json(result.rows);
     } catch (err) {
         console.error(err);

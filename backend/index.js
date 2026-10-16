@@ -154,6 +154,110 @@ app.post('/api/vote', async (req, res) => {
     }
 });
 
+// GET /api/results/:election_id
+app.get('/api/results/:election_id', async (req, res) => {
+    const { election_id } = req.params;
+    const client = await pool.connect();
+
+    try {
+        const votesQuery = `
+            SELECT v.hashcode as public_key_hex, v.candidate_id, v.signature, c.name as candidate_name
+            FROM votes v
+            JOIN voter_hashes vh ON v.hashcode = vh.hashcode
+            JOIN candidates c ON v.candidate_id = c.id
+            WHERE vh.election_id = $1
+        `;
+        const votesResult = await client.query(votesQuery, [election_id]);
+
+        const groupedVotes = {};
+        for (const row of votesResult.rows) {
+            if (!groupedVotes[row.public_key_hex]) {
+                groupedVotes[row.public_key_hex] = { 
+                    signature: row.signature, 
+                    candidate_ids: [],
+                    candidate_names: []
+                };
+            }
+            groupedVotes[row.public_key_hex].candidate_ids.push(String(row.candidate_id));
+            groupedVotes[row.public_key_hex].candidate_names.push(row.candidate_name);
+        }
+
+        const validCounts = {};
+        let tamperedCount = 0;
+
+        for (const pubKeyHex in groupedVotes) {
+            const group = groupedVotes[pubKeyHex];
+            
+            try {
+                const publicKey = crypto.createPublicKey({
+                    key: Buffer.from(pubKeyHex, 'hex'),
+                    format: 'der',
+                    type: 'spki'
+                });
+
+                const payloadToVerify = group.candidate_ids.sort().join(',');
+
+                const verify = crypto.createVerify('SHA256');
+                verify.update(payloadToVerify);
+                verify.end();
+                
+                const isValid = verify.verify(publicKey, group.signature, 'hex');
+
+                if (isValid) {
+                    for (const name of group.candidate_names) {
+                        validCounts[name] = (validCounts[name] || 0) + 1;
+                    }
+                } else {
+                    tamperedCount++;
+                }
+            } catch (err) {
+                tamperedCount++;
+            }
+        }
+
+        if (tamperedCount > 0) {
+            return res.status(403).json({ 
+                success: false,
+                error: '🚨 خطر امنیتی: دستکاری در دیتابیس تشخیص داده شد!',
+                details: `${tamperedCount} رای دارای امضای دیجیتال نامعتبر هستند. شمارش آرا متوقف شد.`
+            });
+        }
+
+        const allCandidates = await client.query('SELECT name FROM candidates WHERE election_id = $1', [election_id]);
+        const finalResults = allCandidates.rows.map(c => ({
+            name: c.name,
+            votes: validCounts[c.name] || 0
+        })).sort((a, b) => b.votes - a.votes);
+
+        res.json({
+            success: true,
+            message: '✅ سلامت تمام آرا توسط امضای دیجیتال تایید شد.',
+            total_verified_voters: Object.keys(groupedVotes).length,
+            results: finalResults
+        });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'خطا در محاسبه نتایج' });
+    } finally {
+        client.release();
+    }
+});
+
+// GET /api/elections
+app.get('/api/elections', async (req, res) => {
+    const client = await pool.connect();
+    try {
+        const result = await client.query('SELECT id, title FROM elections ORDER BY created_at DESC');
+        res.json(result.rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'خطا در دریافت لیست انتخابات‌ها' });
+    } finally {
+        client.release();
+    }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);

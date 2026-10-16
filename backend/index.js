@@ -42,7 +42,6 @@ app.post('/api/login', async (req, res) => {
     }
 
     try {
-        // ۲. حالا دیتابیس را بر اساس "کلید عمومی" جستجو می‌کنیم (نه کد کاربر!)
         const electionQuery = `
             SELECT e.id as election_id, e.title, e.max_votes 
             FROM voter_hashes vh

@@ -203,6 +203,7 @@ bot.on('callback_query', async (query) => {
         bot.answerCallbackQuery(query.id, { text: '⏳ در حال تولید و ارسال کدها... لطفاً صبر کنید.', show_alert: true });
 
         const client = await pool.connect();
+        const sentMessages = []; 
         try {
             const votersRes = await client.query('SELECT telegram_id, name FROM voters WHERE election_id = $1 AND allowed = TRUE', [electionId]);
             let voters = votersRes.rows;
@@ -226,7 +227,12 @@ bot.on('callback_query', async (query) => {
                 const msgToVoter = `✅ سلام ${voter.name} عزیز!\n\nزمان رای‌گیری فرا رسیده است.\nکد رای‌گیری اختصاصی شما: \`${hashcode}\`\n\nلطفاً با این کد وارد سایت شوید و رای خود را ثبت کنید.`;
                 
                 try {
-                    await bot.sendMessage(voter.telegram_id, msgToVoter, { parse_mode: 'Markdown' });
+                    const sentMsg = await bot.sendMessage(voter.telegram_id, msgToVoter, { parse_mode: 'Markdown' });
+                        sentMessages.push({ 
+                        chatId: voter.telegram_id, 
+                        messageId: sentMsg.message_id 
+                    });
+                    
                     successCount++;
                 } catch (e) {
                     console.log(`Failed to send to ${voter.telegram_id}`);
@@ -234,20 +240,23 @@ bot.on('callback_query', async (query) => {
             }
 
             await client.query('COMMIT');
-            bot.sendMessage(chatId, `✅ عملیات با موفقیت انجام شد.\nکدهای قبلی پاکسازی شدند و کدهای جدید برای ${successCount} نفر از ${voters.length} کاربر تایید شده ارسال گردید.`);
+            bot.sendMessage(chatId, `✅ عملیات با موفقیت انجام شد.\nکدهای جدید برای ${successCount} نفر ارسال گردید.`);
 
         } catch (err) {
-                await client.query('ROLLBACK');
-                console.error(err);
-                
-                if (err.code === '23505') {
-                    bot.sendMessage(chatId, '❌ عملیات متوقف و لغو (Rollback) شد: یک کد امنیتی تکراری تولید شد. وضعیت دیتابیس به حالت قبل برگشت. لطفاً دوباره روی Start Hashing کلیک کنید.');
-                } else {
-                    bot.sendMessage(chatId, '❌ خطایی در تولید یا ارسال کدها رخ داد.');
-                }
-            } finally {
-                client.release();
+            await client.query('ROLLBACK');
+            console.error(err);
+            for (const msg of sentMessages) {
+                bot.deleteMessage(msg.chatId, msg.messageId).catch(() => {});
             }
+            
+            if (err.code === '23505') {
+                bot.sendMessage(chatId, '❌ عملیات لغو شد (کد تکراری). پیام‌های ارسال شده به صورت خودکار از چت کاربران پاک شدند. دیتابیس آسیبی ندید. دوباره روی دکمه کلیک کنید.');
+            } else {
+                bot.sendMessage(chatId, '❌ خطایی رخ داد. دیتابیس Rollback شد و پیام‌های تلگرامیِ ارسال شده پس گرفته شدند.');
+            }
+        } finally {
+            client.release();
+        }
     }
 });
 

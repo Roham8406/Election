@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS candidates (
 
 -- 3. Create the voter hashes table (the manually generated codes)
 CREATE TABLE IF NOT EXISTS voter_hashes (
-    hashcode VARCHAR(100) PRIMARY KEY,
+    hashcode TEXT PRIMARY KEY,
     election_id UUID NOT NULL REFERENCES elections(id) ON DELETE CASCADE
 );
 

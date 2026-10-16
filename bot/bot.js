@@ -113,13 +113,13 @@ async function showVotersList(chatId, messageId, electionId) {
         const statusIcon = voter.allowed ? '✅' : '❌';
         return [{ 
             text: `${statusIcon} ${voter.name}`, 
-            callback_data: voter.allowed ? 'ignore' : `appr_voter_${voter.id}` 
+            callback_data: `appr_voter_${voter.id}` 
         }];
     });
 
     keyboard.push([{ text: '🔙 بازگشت', callback_data: 'back_to_elections' }]);
 
-    bot.editMessageText('لیست ثبت‌نام‌کنندگان:\n*(برای تایید و ارسال کد، روی نام‌های ❌ کلیک کنید)*', {
+    bot.editMessageText('لیست ثبت‌نام‌کنندگان:\n*(برای تغییر وضعیت هر کاربر روی نام او کلیک کنید)*', {
         chat_id: chatId,
         message_id: messageId,
         reply_markup: { inline_keyboard: keyboard },
@@ -160,7 +160,14 @@ bot.on('callback_query', async (query) => {
                 const msgToVoter = `✅ سلام ${voter.name} عزیز!\n\nثبت‌نام شما تایید شد.`;
                 await bot.sendMessage(voter.telegram_id, msgToVoter, { parse_mode: 'Markdown' });
 
-                bot.answerCallbackQuery(query.id, { text: `تایید شد و کد برای ${voter.name} ارسال شد.`, show_alert: false });
+                bot.answerCallbackQuery(query.id, { text: `تایید شد و کد ارسال شد.`, show_alert: false });
+            } else {
+                await client.query('UPDATE voters SET allowed = FALSE WHERE id = $1', [voterId]);
+                
+                const msgToVoter = `❌ سلام ${voter.name}.\n\nمتاسفانه تایید ثبت‌نام شما در انتخابات لغو شد.`;
+                await bot.sendMessage(voter.telegram_id, msgToVoter);
+
+                bot.answerCallbackQuery(query.id, { text: `تایید ${voter.name} لغو شد.`, show_alert: false });
             }
             
             await client.query('COMMIT');
@@ -169,14 +176,10 @@ bot.on('callback_query', async (query) => {
         } catch (err) {
             await client.query('ROLLBACK');
             console.error(err);
-            bot.answerCallbackQuery(query.id, { text: 'خطا در تایید کاربر', show_alert: true });
+            bot.answerCallbackQuery(query.id, { text: 'خطا در تغییر وضعیت کاربر', show_alert: true });
         } finally {
             client.release();
         }
-    }
-    
-    else if (data === 'ignore') {
-        bot.answerCallbackQuery(query.id, { text: 'این کاربر قبلاً تایید شده است.' });
     }
 });
 

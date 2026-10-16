@@ -221,6 +221,7 @@ bot.on('callback_query', async (query) => {
 
             for (const voter of voters) {
                 const hashcode = crypto.randomBytes(50).toString('hex').substring(0, 98);
+                await client.query('INSERT INTO voter_hashes (hashcode, election_id) VALUES ($1, $2)', [hashcode, electionId]);
                 const msgToVoter = `✅ سلام ${voter.name} عزیز!\n\nزمان رای‌گیری فرا رسیده است.\nکد رای‌گیری اختصاصی شما: \`${hashcode}\`\n\nلطفاً با این کد وارد سایت شوید و رای خود را ثبت کنید.`;
                 
                 try {

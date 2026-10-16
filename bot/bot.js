@@ -222,13 +222,30 @@ bot.on('callback_query', async (query) => {
             let successCount = 0;
 
             for (const voter of voters) {
-                const hashcode = crypto.randomBytes(50).toString('hex').substring(0, 98);
-                await client.query('INSERT INTO voter_hashes (hashcode, election_id) VALUES ($1, $2)', [hashcode, electionId]);
-                const msgToVoter = `✅ سلام ${voter.name} عزیز!\n\nزمان رای‌گیری فرا رسیده است.\nکد رای‌گیری اختصاصی شما: \`${hashcode}\`\n\nلطفاً با این کد وارد سایت شوید و رای خود را ثبت کنید.`;
+                const { publicKey, privateKey } = crypto.generateKeyPairSync('ec', {
+                    namedCurve: 'prime256v1',
+                    publicKeyEncoding: { type: 'spki', format: 'der' },
+                    privateKeyEncoding: { type: 'pkcs8', format: 'der' }
+                });
+
+                const pubKeyHex = publicKey.toString('hex');
+                const privKeyHex = privateKey.toString('hex');
+
+                let inserted = false;
+                while (!inserted) {
+                    try {
+                        await client.query('INSERT INTO voter_hashes (hashcode, election_id) VALUES ($1, $2)', [pubKeyHex, electionId]);
+                        inserted = true;
+                    } catch (err) {
+                        if (err.code !== '23505') throw err;
+                    }
+                }
+
+                const msgToVoter = `✅ سلام ${voter.name} عزیز!\n\nزمان رای‌گیری فرا رسیده است.\nکد رای‌گیری اختصاصی شما (کلید خصوصی):\n\`${privKeyHex}\`\n\nلطفاً با این کد وارد سایت شوید و رای خود را ثبت کنید. ⚠️ این کد را به هیچکس ندهید.`;
                 
                 try {
                     const sentMsg = await bot.sendMessage(voter.telegram_id, msgToVoter, { parse_mode: 'Markdown' });
-                        sentMessages.push({ 
+                    sentMessages.push({ 
                         chatId: voter.telegram_id, 
                         messageId: sentMsg.message_id 
                     });

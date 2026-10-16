@@ -124,7 +124,7 @@ app.post('/api/vote', async (req, res) => {
             return res.status(400).json({ error: `باید حداکثر به ${maxVotes} کاندید رای داد` });
         }
 
-        const payloadToSign = candidate_ids.slice().sort().join(','); 
+        const payloadToSign = candidate_ids.length > 0 ? candidate_ids.slice().sort().join(',') : ''; 
         const sign = crypto.createSign('SHA256');
         sign.update(payloadToSign);
         sign.end();
@@ -132,9 +132,13 @@ app.post('/api/vote', async (req, res) => {
 
         await client.query('DELETE FROM votes WHERE hashcode = $1', [pubKeyHex]);
 
-        const insertQuery = 'INSERT INTO votes (hashcode, candidate_id, signature) VALUES ($1, $2, $3)';
-        for (const candidate_id of candidate_ids) {
-            await client.query(insertQuery, [pubKeyHex, candidate_id, voteSignature]);
+        if (candidate_ids.length > 0) {
+            const insertQuery = 'INSERT INTO votes (hashcode, candidate_id, signature) VALUES ($1, $2, $3)';
+            for (const candidate_id of candidate_ids) {
+                await client.query(insertQuery, [pubKeyHex, candidate_id, voteSignature]);
+            }
+        } else {
+            await client.query('INSERT INTO votes (hashcode, candidate_id, signature) VALUES ($1, NULL, $2)', [pubKeyHex, voteSignature]);
         }
 
         await client.query('COMMIT');
@@ -153,7 +157,6 @@ app.post('/api/vote', async (req, res) => {
         client.release();
     }
 });
-
 // GET /api/results/:election_id
 app.get('/api/results/:election_id', async (req, res) => {
     const { election_id } = req.params;
@@ -164,7 +167,7 @@ app.get('/api/results/:election_id', async (req, res) => {
             SELECT v.hashcode as public_key_hex, v.candidate_id, v.signature, c.name as candidate_name
             FROM votes v
             JOIN voter_hashes vh ON v.hashcode = vh.hashcode
-            JOIN candidates c ON v.candidate_id = c.id
+            LEFT JOIN candidates c ON v.candidate_id = c.id
             WHERE vh.election_id = $1
         `;
         const votesResult = await client.query(votesQuery, [election_id]);
@@ -178,15 +181,23 @@ app.get('/api/results/:election_id', async (req, res) => {
                     candidate_names: []
                 };
             }
-            groupedVotes[row.public_key_hex].candidate_ids.push(String(row.candidate_id));
-            groupedVotes[row.public_key_hex].candidate_names.push(row.candidate_name);
+            
+            if (row.candidate_id !== null) {
+                groupedVotes[row.public_key_hex].candidate_ids.push(String(row.candidate_id));
+                groupedVotes[row.public_key_hex].candidate_names.push(row.candidate_name);
+            }
         }
 
         const validCounts = {};
+        let blankVotesCount = 0;
         let tamperedCount = 0;
+        const verifiedPublicKeys = [];
 
         for (const pubKeyHex in groupedVotes) {
             const group = groupedVotes[pubKeyHex];
+            const payloadToVerify = group.candidate_ids.length > 0 
+                ? group.candidate_ids.sort().join(',') 
+                : '';
             
             try {
                 const publicKey = crypto.createPublicKey({
@@ -195,8 +206,6 @@ app.get('/api/results/:election_id', async (req, res) => {
                     type: 'spki'
                 });
 
-                const payloadToVerify = group.candidate_ids.sort().join(',');
-
                 const verify = crypto.createVerify('SHA256');
                 verify.update(payloadToVerify);
                 verify.end();
@@ -204,8 +213,14 @@ app.get('/api/results/:election_id', async (req, res) => {
                 const isValid = verify.verify(publicKey, group.signature, 'hex');
 
                 if (isValid) {
-                    for (const name of group.candidate_names) {
-                        validCounts[name] = (validCounts[name] || 0) + 1;
+                    verifiedPublicKeys.push(pubKeyHex);
+                    
+                    if (group.candidate_ids.length === 0) {
+                        blankVotesCount++;
+                    } else {
+                        for (const name of group.candidate_names) {
+                            if (name) validCounts[name] = (validCounts[name] || 0) + 1;
+                        }
                     }
                 } else {
                     tamperedCount++;
@@ -233,7 +248,9 @@ app.get('/api/results/:election_id', async (req, res) => {
             success: true,
             message: '✅ سلامت تمام آرا توسط امضای دیجیتال تایید شد.',
             total_verified_voters: Object.keys(groupedVotes).length,
-            results: finalResults
+            blank_votes: blankVotesCount,
+            results: finalResults,
+            voters_list: verifiedPublicKeys
         });
 
     } catch (err) {

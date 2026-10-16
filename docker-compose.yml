@@ -60,6 +60,7 @@ services:
       - TELEGRAM_BOT_TOKEN=YOUR_TELEGRAM_BOT_TOKEN_HERE
       - TELEGRAM_PROXY_URL=https://aged-shape-a9f5.roham8406.workers.dev
       - HR_ID=1619813422
+      - MANAGER_ID=1619813422
     dns:
       - 8.8.8.8
       - 8.8.4.4

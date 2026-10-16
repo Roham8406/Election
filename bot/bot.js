@@ -4,6 +4,7 @@ const { Pool } = require('pg');
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const HR_ID = process.env.HR_ID;
+const MANAGER_ID = process.env.MANAGER_ID;
 
 const bot = new TelegramBot(token, { 
     polling: true,
@@ -181,6 +182,83 @@ bot.on('callback_query', async (query) => {
             client.release();
         }
     }
+
+    else if (data.startsWith('manage_elec_')) {
+        const electionId = data.replace('manage_elec_', '');
+        const keyboard = [
+            [{ text: '🚀 Start Hashing (صدور و ارسال کدهای یکبارمصرف)', callback_data: `start_hash_${electionId}` }]
+        ];
+        
+        bot.editMessageText('⚠️ **اخطار:** با کلیک روی دکمه زیر، برای تمام کاربرانی که توسط HR تایید شده‌اند کد رای‌گیری تولید شده و پیامک می‌شود.', {
+            chat_id: chatId,
+            message_id: messageId,
+            reply_markup: { inline_keyboard: keyboard },
+            parse_mode: 'Markdown'
+        });
+    }
+
+    else if (data.startsWith('start_hash_')) {
+        const electionId = data.replace('start_hash_', '');
+        bot.answerCallbackQuery(query.id, { text: '⏳ در حال تولید و ارسال کدها... لطفاً صبر کنید.', show_alert: true });
+
+        const client = await pool.connect();
+        try {
+            const votersRes = await client.query('SELECT telegram_id, name FROM voters WHERE election_id = $1 AND allowed = TRUE', [electionId]);
+            const voters = votersRes.rows;
+
+            if (voters.length === 0) {
+                return bot.sendMessage(chatId, '❌ هیچ کاربر تایید شده‌ای برای این انتخابات یافت نشد.');
+            }
+
+            await client.query('BEGIN');
+            let successCount = 0;
+
+            for (const voter of voters) {
+                const hashcode = Math.random().toString(36).substring(2, 8).toUpperCase();
+                await client.query('INSERT INTO voter_hashes (hashcode, election_id) VALUES ($1, $2)', [hashcode, electionId]);
+
+                const msgToVoter = `✅ سلام ${voter.name} عزیز!\n\nزمان رای‌گیری فرا رسیده است.\nکد رای‌گیری اختصاصی شما: \`${hashcode}\`\n\nلطفاً با این کد وارد سایت شوید و رای خود را ثبت کنید.`;
+                
+                try {
+                    await bot.sendMessage(voter.telegram_id, msgToVoter, { parse_mode: 'Markdown' });
+                    successCount++;
+                } catch (e) {
+                    console.log(`Failed to send to ${voter.telegram_id}`);
+                }
+            }
+
+            await client.query('COMMIT');
+            bot.sendMessage(chatId, `✅ عملیات با موفقیت انجام شد.\nکدهای رای‌گیری تولید شد و برای ${successCount} نفر از ${voters.length} کاربر تایید شده در تلگرام ارسال گردید.`);
+
+        } catch (err) {
+            await client.query('ROLLBACK');
+            console.error(err);
+            bot.sendMessage(chatId, '❌ خطایی در تولید یا ارسال کدها رخ داد.');
+        } finally {
+            client.release();
+        }
+    }
 });
 
-console.log('Telegram bot is running with Admin Approval flow...');
+// ==========================================
+// Manager
+// ==========================================
+bot.onText(/\/manage/, async (msg) => {
+    const chatId = msg.chat.id;
+    if (msg.from.id.toString() !== MANAGER_ID) return;
+
+    try {
+        const result = await pool.query('SELECT id, title FROM elections');
+        if (result.rows.length === 0) return bot.sendMessage(chatId, 'هیچ انتخاباتی وجود ندارد.');
+
+        const keyboard = result.rows.map(e => ([{ text: `⚙️ مدیریت: ${e.title}`, callback_data: `manage_elec_${e.id}` }]));
+        bot.sendMessage(chatId, '👨‍💻 **پنل مدیر ارشد (Manager):**\nبرای صدور کدهای رای‌گیری، انتخابات را انتخاب کنید:', {
+            reply_markup: { inline_keyboard: keyboard },
+            parse_mode: 'Markdown'
+        });
+    } catch (err) {
+        bot.sendMessage(chatId, 'خطا در دریافت لیست.');
+    }
+});
+
+console.log('Telegram bot is running...');

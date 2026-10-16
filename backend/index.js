@@ -85,7 +85,7 @@ app.post('/api/vote', async (req, res) => {
         return res.status(400).json({ error: 'کد رای‌گیری نامعتبر است (لطفاً از اضافه کردن حروف یا فاصله خودداری کنید).' });
     }
 
-    if (!privKeyHex || !Array.isArray(candidate_ids) || candidate_ids.length === 0) {
+    if (!privKeyHex || !Array.isArray(candidate_ids)) {
         return res.status(400).json({ error: 'ورودی نامعتبر است.' });
     }
 

@@ -208,7 +208,7 @@ bot.on('callback_query', async (query) => {
             let voters = votersRes.rows;
 
             if (voters.length === 0) {
-                return bot.sendMessage(chatId, '❌ هیچ کاربر تایید شده‌ای یافت نشد.');
+                return bot.sendMessage(chatId, '❌ هیچ کاربر تایید شده‌ای برای این انتخابات یافت نشد.');
             }
 
             for (let i = voters.length - 1; i > 0; i--) {
@@ -217,6 +217,7 @@ bot.on('callback_query', async (query) => {
             }
 
             await client.query('BEGIN');
+            await client.query('DELETE FROM voter_hashes WHERE election_id = $1', [electionId]);
             let successCount = 0;
 
             for (const voter of voters) {
@@ -233,7 +234,7 @@ bot.on('callback_query', async (query) => {
             }
 
             await client.query('COMMIT');
-            bot.sendMessage(chatId, `✅ عملیات با موفقیت انجام شد.\nکدهای رای‌گیری تولید شد و برای ${successCount} نفر از ${voters.length} کاربر تایید شده در تلگرام ارسال گردید.`);
+            bot.sendMessage(chatId, `✅ عملیات با موفقیت انجام شد.\nکدهای قبلی پاکسازی شدند و کدهای جدید برای ${successCount} نفر از ${voters.length} کاربر تایید شده ارسال گردید.`);
 
         } catch (err) {
             await client.query('ROLLBACK');

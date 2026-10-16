@@ -5,6 +5,7 @@ const { Pool } = require('pg');
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const HR_ID = process.env.HR_ID;
 const MANAGER_ID = process.env.MANAGER_ID;
+const crypto = require('crypto');
 
 const bot = new TelegramBot(token, { 
     polling: true,
@@ -214,8 +215,7 @@ bot.on('callback_query', async (query) => {
             let successCount = 0;
 
             for (const voter of voters) {
-                const hashcode = Math.random().toString(36).substring(2, 8).toUpperCase();
-                await client.query('INSERT INTO voter_hashes (hashcode, election_id) VALUES ($1, $2)', [hashcode, electionId]);
+                const hashcode = crypto.randomBytes(50).toString('hex').substring(0, 99);                await client.query('INSERT INTO voter_hashes (hashcode, election_id) VALUES ($1, $2)', [hashcode, electionId]);
 
                 const msgToVoter = `✅ سلام ${voter.name} عزیز!\n\nزمان رای‌گیری فرا رسیده است.\nکد رای‌گیری اختصاصی شما: \`${hashcode}\`\n\nلطفاً با این کد وارد سایت شوید و رای خود را ثبت کنید.`;
                 

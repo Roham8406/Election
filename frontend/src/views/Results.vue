@@ -130,14 +130,13 @@ const fetchResults = async (id) => {
       successMessage.value = data.message;
       totalVoters.value = data.total_verified_voters;
       votersList.value = data.voters_list;
-      blankVotes.value = blank_votes; 
+      blankVotes.value = data.blank_votes; 
     } else {
       error.value = data.error || 'خطا در دریافت نتایج';
       errorDetails.value = data.details || '';
     }
   } catch (err) {
     error.value = 'خطا در ارتباط با سرور بک‌ند.';
-    console.log(err.message);
   } finally {
     loadingResults.value = false;
   }

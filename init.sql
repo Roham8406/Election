@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS voter_hashes (
 
 -- 4. Create the votes table
 CREATE TABLE IF NOT EXISTS votes (
-    hashcode VARCHAR(100) NOT NULL REFERENCES voter_hashes(hashcode) ON DELETE CASCADE,
+    hashcode TEXT NOT NULL REFERENCES voter_hashes(hashcode) ON DELETE CASCADE,
     candidate_id UUID NOT NULL REFERENCES candidates(id) ON DELETE CASCADE,
     signature TEXT NOT NULL;
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,

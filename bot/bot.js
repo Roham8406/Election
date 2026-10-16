@@ -237,12 +237,17 @@ bot.on('callback_query', async (query) => {
             bot.sendMessage(chatId, `✅ عملیات با موفقیت انجام شد.\nکدهای قبلی پاکسازی شدند و کدهای جدید برای ${successCount} نفر از ${voters.length} کاربر تایید شده ارسال گردید.`);
 
         } catch (err) {
-            await client.query('ROLLBACK');
-            console.error(err);
-            bot.sendMessage(chatId, '❌ خطایی در تولید یا ارسال کدها رخ داد.');
-        } finally {
-            client.release();
-        }
+                await client.query('ROLLBACK');
+                console.error(err);
+                
+                if (err.code === '23505') {
+                    bot.sendMessage(chatId, '❌ عملیات متوقف و لغو (Rollback) شد: یک کد امنیتی تکراری تولید شد. وضعیت دیتابیس به حالت قبل برگشت. لطفاً دوباره روی Start Hashing کلیک کنید.');
+                } else {
+                    bot.sendMessage(chatId, '❌ خطایی در تولید یا ارسال کدها رخ داد.');
+                }
+            } finally {
+                client.release();
+            }
     }
 });
 

@@ -25,7 +25,7 @@ services:
     environment:
       - PORT=3000
       - DATABASE_URL=postgres://admin:secretpassword@db:5432/electiondb
-      - ALLOWED_ORIGINS=http://localhost:8081,http://server-b65d7767-9615-450a-b450a-b2cd-6ad323fd5d47.ir-thr-fr1.arvancompute.ir:8081
+      - ALLOWED_ORIGINS=http://localhost:8081,http://server-b65d7767-9615-450a-b2cd-6ad323fd5d47.ir-thr-fr1.arvancompute.ir:8081
 
       # TODO Delete localhost
       - TELEGRAM_BOT_TOKEN=YOUR_TELEGRAM_BOT_TOKEN_HERE

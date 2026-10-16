@@ -60,6 +60,25 @@
       <div v-if="!loadingResults && !error && selectedElectionId && results.length === 0" style="text-align: center; margin-top: 20px; color: gray;">
         <p>هنوز هیچ رای معتبری برای این انتخابات ثبت نشده است.</p>
       </div>
+      
+      <div style="margin-top: 15px; font-weight: bold; text-align: center;">
+         تعداد آرای سفید: {{ blankVotes }}
+      </div>
+
+      <hr style="margin: 40px 0; border: 0; border-top: 1px solid #ddd;" />
+
+      <div v-if="votersList.length > 0" style="background: #fdfdfd; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+        <h3 style="margin-top: 0;">📜 دفتر کل آرا (Bulletin Board)</h3>
+        <p style="font-size: 0.9em; color: gray;">
+          کدهای زیر، کلید عمومی (Public Key) تمام کسانی است که رای‌شان در سیستم ثبت و شمرده شده است. شما می‌توانید با محاسبه کلید عمومی خود، حضور رای‌تان را پیگیری کنید.
+        </p>
+        
+        <div style="max-height: 200px; overflow-y: auto; background: #222; color: #0f0; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 11px; text-align: left; direction: ltr;">
+          <div v-for="(pubKey, index) in votersList" :key="index" style="margin-bottom: 5px; word-break: break-all;">
+            {{ index + 1 }}. {{ pubKey }}
+          </div>
+        </div>
+      </div>
 
     </div>
   </div>
@@ -80,6 +99,8 @@ const errorDetails = ref('');
 const results = ref([]);
 const successMessage = ref('');
 const totalVoters = ref(0);
+const votersList = ref([]);
+const blankVotes = ref(0);
 
 const fetchElections = async () => {
   try {
@@ -108,6 +129,8 @@ const fetchResults = async (id) => {
       results.value = data.results;
       successMessage.value = data.message;
       totalVoters.value = data.total_verified_voters;
+      votersList.value = data.voters_list;
+      blankVotes.value = blank_votes; 
     } else {
       error.value = data.error || 'خطا در دریافت نتایج';
       errorDetails.value = data.details || '';

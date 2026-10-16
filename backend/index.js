@@ -24,6 +24,10 @@ const pool = new Pool({
 // POST /api/login
 app.post('/api/login', async (req, res) => {
     const { hashcode: privKeyHex } = req.body;
+
+    if (!privKeyHex || !/^[a-fA-F0-9]{250,300}$/.test(privKeyHex)) {
+        return res.status(400).json({ error: 'کد رای‌گیری نامعتبر است (لطفاً از اضافه کردن حروف یا فاصله خودداری کنید).' });
+    }
     
     if (!privKeyHex) return res.status(400).json({ error: 'کد خود را وارد کنید.' });
 
@@ -77,6 +81,10 @@ app.post('/api/login', async (req, res) => {
 app.post('/api/vote', async (req, res) => {
     const { hashcode: privKeyHex, candidate_ids } = req.body;
     
+    if (!privKeyHex || !/^[a-fA-F0-9]{250,300}$/.test(privKeyHex)) {
+        return res.status(400).json({ error: 'کد رای‌گیری نامعتبر است (لطفاً از اضافه کردن حروف یا فاصله خودداری کنید).' });
+    }
+
     if (!privKeyHex || !Array.isArray(candidate_ids) || candidate_ids.length === 0) {
         return res.status(400).json({ error: 'ورودی نامعتبر است.' });
     }

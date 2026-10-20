@@ -422,7 +422,7 @@ app.post('/api/admin/voters/:id/approve', authenticateAdmin, requireRole('HR'), 
     }
 });
 
-app.delete('/api/admin/voters/:id/reject', authenticateAdmin, requireRole('HR'), async (req, res) => {
+app.post('/api/admin/voters/:id/reject', authenticateAdmin, requireRole('HR'), async (req, res) => {
     const voterId = req.params.id;
     try {
         await pool.query('UPDATE voters SET allowed = FALSE WHERE id = $1', [voterId]);

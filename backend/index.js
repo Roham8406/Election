@@ -61,6 +61,16 @@ const authenticateAdmin = (req, res, next) => {
     }
 };
 
+
+const requireRole = (requiredRole) => {
+    return (req, res, next) => {
+        if (!req.admin || !req.admin.roles.includes(requiredRole)) {
+            return res.status(403).json({ error: 'دسترسی غیرمجاز. شما به این بخش دسترسی ندارید.' });
+        }
+        next();
+    };
+};
+
 // POST /api/login
 app.post('/api/login', async (req, res) => {
     const { hashcode: privKeyHex } = req.body;
@@ -380,6 +390,48 @@ app.post('/api/admin/login', strictLimiter, async (req, res) => {
     }
 });
 
+app.get('/api/admin/elections', authenticateAdmin, requireRole('HR'), async (req, res) => {
+    try {
+        const { rows } = await pool.query('SELECT id, title FROM elections');
+        res.json({ success: true, elections: rows });
+    } catch (err) {
+        res.status(500).json({ error: 'خطا در دریافت لیست انتخابات' });
+    }
+});
+
+app.get('/api/admin/elections/:id/voters', authenticateAdmin, requireRole('HR'), async (req, res) => {
+    const electionId = req.params.id;
+    try {
+        const { rows } = await pool.query(
+            'SELECT id, telegram_id, name, allowed, created_at FROM voters WHERE election_id = $1 ORDER BY created_at DESC', 
+            [electionId]
+        );
+        res.json({ success: true, voters: rows });
+    } catch (err) {
+        res.status(500).json({ error: 'خطا در دریافت کاربران' });
+    }
+});
+
+app.post('/api/admin/voters/:id/approve', authenticateAdmin, requireRole('HR'), async (req, res) => {
+    const voterId = req.params.id;
+    try {
+        await pool.query('UPDATE voters SET allowed = TRUE WHERE id = $1', [voterId]);
+        res.json({ success: true, message: 'کاربر با موفقیت تایید شد.' });
+    } catch (err) {
+        res.status(500).json({ error: 'خطا در تایید کاربر' });
+    }
+});
+
+app.delete('/api/admin/voters/:id/reject', authenticateAdmin, requireRole('HR'), async (req, res) => {
+    const voterId = req.params.id;
+    try {
+        await pool.query('UPDATE voters SET allowed = FALSE WHERE id = $1', [voterId]);
+                
+        res.json({ success: true, message: 'کاربر با موفقیت رد صلاحیت شد.' });
+    } catch (err) {
+        res.status(500).json({ error: 'خطا در رد صلاحیت کاربر' });
+    }
+});
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);

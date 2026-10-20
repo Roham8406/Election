@@ -364,35 +364,21 @@ app.post('/api/admin/login', strictLimiter, async (req, res) => {
         }
 
         const rolesRes = await pool.query(`
-            SELECT r.name FROM roles r
-            JOIN admin_roles ar ON r.id = ar.role_id
-            WHERE ar.admin_id = $1
-        `, [admin.id]);
-        const roles = rolesRes.rows.map(r => r.name);
-        const token = jwt.sign({ id: admin.id, username: admin.username, roles }, JWT_SECRET, { expiresIn: '48h' });
-
-        res.json({ success: true, token, roles });
-    } catch (err) {
-        res.status(500).json({ error: 'خطای داخلی سرور' });
-    }
-});
-
-
-app.get('/api/admin/panels', authenticateAdmin, async (req, res) => {
-    try {
-        const query = `
             SELECT r.name, r.panel_url 
             FROM roles r
             JOIN admin_roles ar ON r.id = ar.role_id
             WHERE ar.admin_id = $1 AND r.panel_url IS NOT NULL
-        `;
-        const { rows } = await pool.query(query, [req.admin.id]);
-        res.json({ success: true, panels: rows });
+        `, [admin.id]);
+
+        const panels = rolesRes.rows; 
+        const roles = panels.map(p => p.name);
+
+        const token = jwt.sign({ id: admin.id, username: admin.username, roles }, JWT_SECRET, { expiresIn: '8h' });
+        res.json({ success: true, token, roles, panels });
     } catch (err) {
-        res.status(500).json({ error: 'خطا در دریافت لیست پنل‌ها' });
+        res.status(500).json({ error: 'خطای داخلی سرور' });
     }
 });
-
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

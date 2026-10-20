@@ -7,7 +7,7 @@
 
     <div style="display: flex; border-bottom: 2px solid #eee; margin-bottom: 20px;">
       <button @click="activeTab = 'approvals'" :style="activeTab === 'approvals' ? activeTabStyle : inactiveTabStyle">✅ مدیریت رای‌دهندگان</button>
-      <button @click="activeTab = 'placeholder'" :style="activeTab === 'placeholder' ? activeTabStyle : inactiveTabStyle">📄 بخش آزمایشی</button>
+      <button @click="activeTab = 'import'" :style="activeTab === 'import' ? activeTabStyle : inactiveTabStyle">📥 ورود گروهی (Import)</button>
     </div>
 
     <div v-if="activeTab === 'approvals'">
@@ -56,8 +56,34 @@
       </table>
     </div>
 
-    <div v-if="activeTab === 'placeholder'">
-      <p>لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ است...</p>
+
+    <div v-if="activeTab === 'import'">
+        <div style="margin-bottom: 20px;">
+            <label>۱. ابتدا انتخابات مورد نظر را انتخاب کنید:</label>
+            <select v-model="selectedElection" style="width: 100%; padding: 10px; margin-top: 5px;">
+            <option disabled value="">یک مورد را انتخاب کنید...</option>
+            <option v-for="el in elections" :key="el.id" :value="el.id">{{ el.title }}</option>
+            </select>
+        </div>
+
+        <div v-if="selectedElection">
+            <label>۲. لیست رای‌دهندگان را وارد کنید (هر نفر در یک خط، فرمت: <b>آیدی‌تلگرام,نام</b>):</label>
+            <textarea 
+            v-model="bulkInput" 
+            placeholder="12345678, علی احمدی&#n87654321, سارا رضایی" 
+            style="width: 100%; height: 200px; padding: 10px; margin-top: 10px; font-family: monospace; direction: ltr; text-align: left;"
+            ></textarea>
+            
+            <button 
+            @click="insertBulkVoters" 
+            style="margin-top: 15px; width: 100%; padding: 12px; background: #2196F3; color: white; border: none; border-radius: 4px; font-size: 16px; font-weight: bold; cursor: pointer;"
+            >
+            وارد کردن به سیستم (Insert)
+            </button>
+        </div>
+        <div v-else style="color: orange; padding: 10px; background: #fff3e0; border-radius: 4px;">
+            لطفاً برای نمایش کادر ورود اطلاعات، ابتدا یک انتخابات را از لیست بالا انتخاب کنید.
+        </div>
     </div>
   </div>
 </template>
@@ -71,6 +97,8 @@ const activeTab = ref('approvals');
 const elections = ref([]);
 const selectedElection = ref('');
 const votersList = ref([]);
+const bulkInput = ref('');
+
 
 const activeTabStyle = "flex: 1; padding: 12px; border: none; border-bottom: 3px solid #2196F3; background: transparent; font-weight: bold; color: #2196F3; cursor: pointer;";
 const inactiveTabStyle = "flex: 1; padding: 12px; border: none; border-bottom: 3px solid transparent; background: transparent; color: #777; cursor: pointer;";
@@ -130,6 +158,48 @@ const triggerReject = async (userId) => {
       }
     }
   } catch (err) {}
+};
+
+const insertBulkVoters = async () => {
+  if (!bulkInput.value.trim()) {
+    alert('لطفا لیست کاربران را وارد کنید.');
+    return;
+  }
+
+  const lines = bulkInput.value.split('\n');
+  const parsedVoters = [];
+
+  for (const line of lines) {
+    if (!line.trim()) continue;
+    const parts = line.split(',');
+    if (parts.length >= 2) {
+      parsedVoters.push({
+        telegram_id: parts[0].trim(),
+        name: parts[1].trim()
+      });
+    }
+  }
+
+  if (parsedVoters.length === 0) {
+    alert('فرمت اطلاعات وارد شده صحیح نیست. حتما از کاما (,) برای جداسازی استفاده کنید.');
+    return;
+  }
+
+  try {
+    const data = await fetchAuth(`${API_URL}/api/admin/elections/${selectedElection.value}/voters/import`, {
+      method: 'POST',
+      body: JSON.stringify({ voters: parsedVoters })
+    });
+
+    if (data.success) {
+      alert(data.message);
+      bulkInput.value = ''; 
+      activeTab.value = 'approvals';
+      fetchVoters();
+    }
+  } catch (err) {
+    alert('خطا در ارتباط با سرور هنگام ذخیره گروهی.');
+  }
 };
 
 const logout = () => {

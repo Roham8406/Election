@@ -44,6 +44,23 @@ const pool = new Pool({
     connectionString: process.env.DATABASE_URL
 });
 
+
+const authenticateAdmin = (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'عدم دسترسی. توکن ارسال نشده است.' });
+    }
+    
+    const token = authHeader.split(' ')[1];
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        req.admin = decoded;
+        next();
+    } catch (err) {
+        res.status(400).json({ error: 'توکن نامعتبر یا منقضی شده است.' });
+    }
+};
+
 // POST /api/login
 app.post('/api/login', async (req, res) => {
     const { hashcode: privKeyHex } = req.body;
@@ -352,13 +369,30 @@ app.post('/api/admin/login', strictLimiter, async (req, res) => {
             WHERE ar.admin_id = $1
         `, [admin.id]);
         const roles = rolesRes.rows.map(r => r.name);
-        const token = jwt.sign({ id: admin.id, username: admin.username, roles }, JWT_SECRET, { expiresIn: '8h' });
+        const token = jwt.sign({ id: admin.id, username: admin.username, roles }, JWT_SECRET, { expiresIn: '48h' });
 
         res.json({ success: true, token, roles });
     } catch (err) {
         res.status(500).json({ error: 'خطای داخلی سرور' });
     }
 });
+
+
+app.get('/api/admin/panels', authenticateAdmin, async (req, res) => {
+    try {
+        const query = `
+            SELECT r.name, r.panel_url 
+            FROM roles r
+            JOIN admin_roles ar ON r.id = ar.role_id
+            WHERE ar.admin_id = $1 AND r.panel_url IS NOT NULL
+        `;
+        const { rows } = await pool.query(query, [req.admin.id]);
+        res.json({ success: true, panels: rows });
+    } catch (err) {
+        res.status(500).json({ error: 'خطا در دریافت لیست پنل‌ها' });
+    }
+});
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

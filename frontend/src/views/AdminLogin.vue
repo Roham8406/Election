@@ -18,7 +18,7 @@ const username = ref('');
 const password = ref('');
 const error = ref('');
 const router = useRouter();
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL;
 
 const handleLogin = async () => {
   try {
@@ -31,13 +31,18 @@ const handleLogin = async () => {
     
     if (data.success) {
       localStorage.setItem('admin_token', data.token);
-      localStorage.setItem('admin_roles', JSON.stringify(data.roles)); 
-      router.push('/admin/dashboard');
+      localStorage.setItem('admin_panels', JSON.stringify(data.panels)); 
+      
+      if (data.panels.length === 1) {
+        router.push(data.panels[0].panel_url);
+      } else {
+        router.push('/admin/dashboard');
+      }
     } else {
       error.value = data.error;
     }
   } catch (err) {
-    error.value = 'Connection error';
+    error.value = 'خطا در ارتباط با سرور';
   }
 };
 </script>

@@ -3,6 +3,11 @@ const cors = require('cors');
 const crypto = require('crypto');
 const { Pool } = require('pg');
 const rateLimit = require('express-rate-limit');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const JWT_SECRET = process.env.JWT_SECRET;
+
+
 
 const app = express();
 app.use(express.json());
@@ -290,6 +295,68 @@ app.get('/api/elections', async (req, res) => {
         res.status(500).json({ error: 'خطا در دریافت لیست انتخابات‌ها' });
     } finally {
         client.release();
+    }
+});
+
+// app.post('/api/admin/setup', async (req, res) => {
+//     const { username, password, roles } = req.body; // roles e.g. ['Manager', 'HR']
+//     const client = await pool.connect();
+//     try {
+//         await client.query('BEGIN');
+//         const hashedPassword = await bcrypt.hash(password, 10);
+        
+//         // Insert admin
+//         const adminRes = await client.query(
+//             'INSERT INTO admins (username, password) VALUES ($1, $2) RETURNING id',
+//             [username, hashedPassword]
+//         );
+//         const adminId = adminRes.rows[0].id;
+
+//         // Assign roles
+//         for (const roleName of roles) {
+//             const roleRes = await client.query('SELECT id FROM roles WHERE name = $1', [roleName]);
+//             if (roleRes.rows.length > 0) {
+//                 await client.query(
+//                     'INSERT INTO admin_roles (admin_id, role_id) VALUES ($1, $2)',
+//                     [adminId, roleRes.rows[0].id]
+//                 );
+//             }
+//         }
+//         await client.query('COMMIT');
+//         res.json({ success: true, message: 'Admin created successfully' });
+//     } catch (err) {
+//         await client.query('ROLLBACK');
+//         res.status(500).json({ error: err.message });
+//     } finally {
+//         client.release();
+//     }
+// });
+
+app.post('/api/admin/login', strictLimiter, async (req, res) => {
+    const { username, password } = req.body;
+    try {
+        const adminRes = await pool.query('SELECT * FROM admins WHERE username = $1', [username]);
+        if (adminRes.rows.length === 0) {
+            return res.status(401).json({ error: 'نام کاربری نادرست است.' });
+        }
+        const admin = adminRes.rows[0];
+
+        const isMatch = await bcrypt.compare(password, admin.password);
+        if (!isMatch) {
+            return res.status(401).json({ error: 'رمز عبور نادرست است.' });
+        }
+
+        const rolesRes = await pool.query(`
+            SELECT r.name FROM roles r
+            JOIN admin_roles ar ON r.id = ar.role_id
+            WHERE ar.admin_id = $1
+        `, [admin.id]);
+        const roles = rolesRes.rows.map(r => r.name);
+        const token = jwt.sign({ id: admin.id, username: admin.username, roles }, JWT_SECRET, { expiresIn: '8h' });
+
+        res.json({ success: true, token, roles });
+    } catch (err) {
+        res.status(500).json({ error: 'خطای داخلی سرور' });
     }
 });
 

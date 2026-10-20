@@ -39,6 +39,29 @@ CREATE TABLE IF NOT EXISTS voters (
     UNIQUE(telegram_id, election_id)
 );
 
+-- 6. Table for available roles
+CREATE TABLE IF NOT EXISTS roles (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(50) UNIQUE NOT NULL
+);
+
+-- 7. Table for admins (passwords will be hashed, so length is 255)
+CREATE TABLE IF NOT EXISTS admins (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 8. Junction table linking admins to their roles
+CREATE TABLE IF NOT EXISTS admin_roles (
+    admin_id INTEGER REFERENCES admins(id) ON DELETE CASCADE,
+    role_id INTEGER REFERENCES roles(id) ON DELETE CASCADE,
+    PRIMARY KEY (admin_id, role_id)
+);
+
+INSERT INTO roles (name) VALUES ('Manager'), ('HR') ON CONFLICT DO NOTHING;
+
 CREATE INDEX idx_candidates_election ON candidates(election_id);
 CREATE INDEX idx_voter_hashes_election ON voter_hashes(election_id);
 CREATE INDEX idx_votes_candidate ON votes(candidate_id);
@@ -88,4 +111,22 @@ INSERT INTO voter_hashes (hashcode, election_id) VALUES
 ('CODE-1234', '550e8400-e29b-41d4-a716-446655440000'),
 ('CODE-5678', '550e8400-e29b-41d4-a716-446655440000'),
 ('CODE-9999', '550e8400-e29b-41d4-a716-446655440000')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO admins (username, password) 
+VALUES 
+    ('manager', '$2a$10$vI8aWBnW3fID.ZQ4/zo1G.q1lRps.9cGLcZEiGDMVr5yUP1KUOYTa'),
+    ('hr', '$2a$10$vI8aWBnW3fID.ZQ4/zo1G.q1lRps.9cGLcZEiGDMVr5yUP1KUOYTa')
+ON CONFLICT (username) DO NOTHING;
+
+INSERT INTO admin_roles (admin_id, role_id)
+SELECT a.id, r.id 
+FROM admins a, roles r 
+WHERE a.username = 'manager' AND r.name = 'Manager'
+ON CONFLICT DO NOTHING;
+
+INSERT INTO admin_roles (admin_id, role_id)
+SELECT a.id, r.id 
+FROM admins a, roles r 
+WHERE a.username = 'hr' AND r.name = 'HR'
 ON CONFLICT DO NOTHING;

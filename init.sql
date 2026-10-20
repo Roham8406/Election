@@ -115,8 +115,8 @@ ON CONFLICT DO NOTHING;
 
 INSERT INTO admins (username, password) 
 VALUES 
-    ('manager', '$2a$10$vI8aWBnW3fID.ZQ4/zo1G.q1lRps.9cGLcZEiGDMVr5yUP1KUOYTa'),
-    ('hr', '$2a$10$vI8aWBnW3fID.ZQ4/zo1G.q1lRps.9cGLcZEiGDMVr5yUP1KUOYTa')
+    ('manager', '$2b$12$DDXQGp1Ivj2AEyAp0Z1Yqug4uMzQAZoC7Duiv/OKEcrmDdsGPgOYu'),
+    ('hr', '$2b$12$DDXQGp1Ivj2AEyAp0Z1Yqug4uMzQAZoC7Duiv/OKEcrmDdsGPgOYu')
 ON CONFLICT (username) DO NOTHING;
 
 INSERT INTO admin_roles (admin_id, role_id)

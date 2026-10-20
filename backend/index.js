@@ -432,6 +432,38 @@ app.post('/api/admin/voters/:id/reject', authenticateAdmin, requireRole('HR'), a
         res.status(500).json({ error: 'خطا در رد صلاحیت کاربر' });
     }
 });
+
+app.post('/api/admin/elections/:id/voters/import', authenticateAdmin, requireRole('HR'), async (req, res) => {
+    const electionId = req.params.id;
+    const { voters } = req.body;
+
+    if (!voters || !Array.isArray(voters) || voters.length === 0) {
+        return res.status(400).json({ error: 'لیست ارسالی خالی یا نامعتبر است.' });
+    }
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        
+        for (const voter of voters) {
+            await client.query(`
+                INSERT INTO voters (telegram_id, name, election_id, allowed) 
+                VALUES ($1, $2, $3, TRUE)
+                ON CONFLICT (telegram_id, election_id) 
+                DO UPDATE SET allowed = TRUE, name = EXCLUDED.name
+            `, [voter.telegram_id, voter.name, electionId]);
+        }
+
+        await client.query('COMMIT');
+        res.json({ success: true, message: `${voters.length} کاربر با موفقیت وارد سیستم و تایید شدند.` });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        res.status(500).json({ error: 'خطا در ذخیره لیست کاربران دیتابیس' });
+    } finally {
+        client.release();
+    }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);

@@ -31,7 +31,7 @@
           <td style="padding: 10px;">{{ user.name }}</td>
           <td style="padding: 10px;">
             <span v-if="user.allowed" style="color: green; font-weight: bold;">تایید شده</span>
-            <span v-else style="color: orange; font-weight: bold;">در انتظار</span>
+            <span v-else style="color: red; font-weight: bold;">تایید نشده</span>
           </td>
           <td style="padding: 10px; display: flex; gap: 10px;">
             <button 
@@ -42,13 +42,12 @@
                 تایید
             </button>
             <button 
-                v-if="!user.allowed" 
+                v-if="user.allowed" 
                 @click="triggerReject(user.id)" 
                 style="background: #f44336; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;"
             >
-                رد
+                لغو تایید (رد)
             </button>
-            <span v-else style="color: gray; font-size: 0.9em;">تایید شده</span>
           </td>
         </tr>
         <tr v-if="votersList.length === 0">

@@ -42,7 +42,8 @@ CREATE TABLE IF NOT EXISTS voters (
 -- 6. Table for available roles
 CREATE TABLE IF NOT EXISTS roles (
     id SERIAL PRIMARY KEY,
-    name VARCHAR(50) UNIQUE NOT NULL
+    name VARCHAR(50) UNIQUE NOT NULL,
+    panel_url VARCHAR(255) NOT NULL
 );
 
 -- 7. Table for admins (passwords will be hashed, so length is 255)
@@ -60,7 +61,7 @@ CREATE TABLE IF NOT EXISTS admin_roles (
     PRIMARY KEY (admin_id, role_id)
 );
 
-INSERT INTO roles (name) VALUES ('Manager'), ('HR') ON CONFLICT DO NOTHING;
+INSERT INTO roles (name, panel_url) VALUES ('Manager', '/Manager_Panel'), ('HR', '/HR_Panel') ON CONFLICT DO NOTHING;
 
 CREATE INDEX idx_candidates_election ON candidates(election_id);
 CREATE INDEX idx_voter_hashes_election ON voter_hashes(election_id);

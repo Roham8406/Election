@@ -390,7 +390,7 @@ app.post('/api/admin/login', strictLimiter, async (req, res) => {
     }
 });
 
-app.get('/api/admin/elections', authenticateAdmin, requireRole('HR'), async (req, res) => {
+app.get('/api/admin/elections', authenticateAdmin, async (req, res) => {
     try {
         const { rows } = await pool.query('SELECT id, title FROM elections');
         res.json({ success: true, elections: rows });
@@ -459,6 +459,115 @@ app.post('/api/admin/elections/:id/voters/import', authenticateAdmin, requireRol
     } catch (err) {
         await client.query('ROLLBACK');
         res.status(500).json({ error: 'خطا در ذخیره لیست کاربران دیتابیس' });
+    } finally {
+        client.release();
+    }
+});
+
+app.get('/api/admin/manager/elections/:id/check-bot', authenticateAdmin, requireRole('Manager'), async (req, res) => {
+    const electionId = req.params.id;
+    if (!bot) return res.status(500).json({ error: 'توکن تلگرام در بک‌ند تنظیم نشده است.' });
+
+    try {
+        const { rows: voters } = await pool.query('SELECT telegram_id, name FROM voters WHERE election_id = $1 AND allowed = TRUE', [electionId]);
+        if (voters.length === 0) return res.json({ success: true, message: 'هیچ کاربر تایید شده‌ای وجود ندارد.' });
+
+        let reachable = 0;
+        let blocked = [];
+
+        for (const voter of voters) {
+            try {
+                await bot.sendChatAction(voter.telegram_id, 'typing');
+                reachable++;
+            } catch (err) {
+                blocked.push(voter.name);
+            }
+        }
+
+        const msg = blocked.length > 0 
+            ? `از ${voters.length} کاربر، ${reachable} نفر در دسترس هستند. \n\nافرادی که ربات را متوقف (بلاک) کرده‌اند: ${blocked.join('، ')}`
+            : `عالی! تمام ${voters.length} کاربر تایید شده در دسترس هستند و ربات را مسدود نکرده‌اند.`;
+
+        res.json({ success: true, message: msg });
+    } catch (err) {
+        res.status(500).json({ error: 'خطا در بررسی وضعیت کاربران' });
+    }
+});
+
+app.post('/api/admin/manager/elections/:id/start', authenticateAdmin, requireRole('Manager'), async (req, res) => {
+    const electionId = req.params.id;
+    if (!bot) return res.status(500).json({ error: 'توکن تلگرام در بک‌ند تنظیم نشده است.' });
+
+    const client = await pool.connect();
+    const sentMessages = []; 
+    
+    try {
+        const votersRes = await client.query('SELECT telegram_id, name FROM voters WHERE election_id = $1 AND allowed = TRUE', [electionId]);
+        let voters = votersRes.rows;
+
+        if (voters.length === 0) {
+            return res.status(400).json({ error: 'هیچ کاربر تایید شده‌ای یافت نشد.' });
+        }
+
+        for (let i = voters.length - 1; i > 0; i--) {
+            const j = crypto.randomInt(0, i + 1);
+            [voters[i], voters[j]] = [voters[j], voters[i]];
+        }
+
+        await client.query('BEGIN');
+        
+        const { rowCount } = await client.query("UPDATE elections SET status = 'Started' WHERE id = $1 AND status = 'Waiting'", [electionId]);
+        if (rowCount === 0) throw new Error('این انتخابات قبلا شروع شده یا وجود ندارد.');
+
+        await client.query('DELETE FROM voter_hashes WHERE election_id = $1', [electionId]);
+        let successCount = 0;
+
+        for (const voter of voters) {
+            const { publicKey, privateKey } = crypto.generateKeyPairSync('ec', {
+                namedCurve: 'prime256v1',
+                publicKeyEncoding: { type: 'spki', format: 'der' },
+                privateKeyEncoding: { type: 'pkcs8', format: 'der' }
+            });
+
+            const pubKeyHex = publicKey.toString('hex');
+            const privKeyHex = privateKey.toString('hex');
+
+            let inserted = false;
+            while (!inserted) {
+                try {
+                    await client.query('INSERT INTO voter_hashes (hashcode, election_id) VALUES ($1, $2)', [pubKeyHex, electionId]);
+                    inserted = true;
+                } catch (err) {
+                    if (err.code !== '23505') throw err;
+                }
+            }
+
+            const msgToVoter = `✅ سلام ${voter.name} عزیز!\n\nزمان رای‌گیری فرا رسیده است. برای شرکت در انتخابات از اطلاعات زیر استفاده کنید:\n\n🔑 **کد ورود و ثبت رای (کلید خصوصی):**\n\`${privKeyHex}\`\n\n👁️ **کد رهگیری شما (کلید عمومی):**\n\`${pubKeyHex}\``;
+                                
+            try {
+                const sentMsg = await bot.sendMessage(voter.telegram_id, msgToVoter, { parse_mode: 'Markdown' });
+                sentMessages.push({ chatId: voter.telegram_id, messageId: sentMsg.message_id });
+                successCount++;
+            } catch (e) {
+                console.error(`Failed to send to ${voter.telegram_id}`);
+            }
+        }
+
+        await client.query('COMMIT');
+        res.json({ success: true, message: `انتخابات با موفقیت شروع شد!\nکدها برای ${successCount} نفر از طریق تلگرام پیامک شد.` });
+
+    } catch (err) {
+        await client.query('ROLLBACK');
+        
+        for (const msg of sentMessages) {
+            bot.deleteMessage(msg.chatId, msg.messageId).catch(() => {});
+        }
+        
+        const errorMsg = err.code === '23505' 
+            ? 'عملیات لغو شد (کد تکراری). پیام‌های تلگرام پس گرفته شدند. لطفا دوباره تلاش کنید.'
+            : err.message || 'خطایی رخ داد و دیتابیس Rollback شد.';
+        
+        res.status(500).json({ error: errorMsg });
     } finally {
         client.release();
     }

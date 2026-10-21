@@ -1,8 +1,10 @@
 -- 1. Create the elections table
+CREATE TYPE election_status AS ENUM ('Waiting', 'Started', 'Ended');
 CREATE TABLE IF NOT EXISTS elections (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     title VARCHAR(255) NOT NULL,
-    max_votes INTEGER NOT NULL DEFAULT 5
+    max_votes INTEGER NOT NULL DEFAULT 5,
+    status election_status NOT NULL DEFAULT 'Waiting'
 );
 
 -- 2. Create the candidates table

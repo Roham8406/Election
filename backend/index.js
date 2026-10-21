@@ -692,6 +692,24 @@ app.delete('/api/admin/manager/candidates/:id', authenticateAdmin, requireRole('
     }
 });
 
+app.post('/api/admin/manager/elections/:id/end', authenticateAdmin, requireRole('Manager'), async (req, res) => {
+    const electionId = req.params.id;
+    try {
+        const { rowCount } = await pool.query(
+            "UPDATE elections SET status = 'Ended' WHERE id = $1 AND status = 'Started'", 
+            [electionId]
+        );
+
+        if (rowCount === 0) {
+            return res.status(400).json({ error: 'این انتخابات در حال برگزاری نیست یا قبلاً پایان یافته است.' });
+        }
+
+        res.json({ success: true, message: 'انتخابات با موفقیت به پایان رسید و نتایج در سایت منتشر شد.' });
+    } catch (err) {
+        res.status(500).json({ error: 'خطا در پایان دادن به انتخابات' });
+    }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);

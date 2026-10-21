@@ -8,6 +8,13 @@ const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET;
 
 
+const TelegramBot = require('node-telegram-bot-api');
+const telegramToken = process.env.TELEGRAM_BOT_TOKEN;
+const botOptions = { polling: false }; 
+if (process.env.TELEGRAM_PROXY_URL) {
+    botOptions.baseApiUrl = process.env.TELEGRAM_PROXY_URL;
+}
+const bot = telegramToken ? new TelegramBot(telegramToken, botOptions) : null;
 
 const app = express();
 app.use(express.json());

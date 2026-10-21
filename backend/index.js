@@ -534,6 +534,16 @@ app.post('/api/admin/elections/:id/voters/import', authenticateAdmin, requireRol
     }
 });
 
+app.get('/api/admin/bot-users', authenticateAdmin, requireRole('HR'), async (req, res) => {
+    try {
+        const { rows } = await pool.query('SELECT telegram_id, first_name, last_name, username, joined_at FROM bot_users ORDER BY joined_at DESC');
+        res.json({ success: true, users: rows });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'خطا در دریافت لیست کاربران ربات' });
+    }
+});
+
 app.get('/api/admin/manager/elections/:id/check-status', authenticateAdmin, requireRole('Manager'), async (req, res) => {
     const electionId = req.params.id;
     if (!bot) return res.status(500).json({ error: 'توکن تلگرام در بک‌ند تنظیم نشده است.' });

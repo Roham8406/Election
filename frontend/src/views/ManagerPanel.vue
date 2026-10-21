@@ -35,11 +35,19 @@
             </button>
 
             <button 
+              v-if="editData.status === 'Waiting'"
               @click="startElection" 
-              :disabled="editData.status !== 'Waiting'"
-              :style="{ flex: 1, padding: '12px', background: editData.status === 'Waiting' ? '#4CAF50' : '#ccc', color: 'white', border: 'none', borderRadius: '4px', cursor: editData.status === 'Waiting' ? 'pointer' : 'not-allowed' }"
+              style="flex: 1; padding: 12px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;"
             >
               🚀 شروع انتخابات و ارسال کلیدها
+            </button>
+
+            <button 
+              v-if="editData.status === 'Started'"
+              @click="endElection" 
+              style="flex: 1; padding: 12px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;"
+            >
+              🛑 پایان انتخابات و انتشار عمومی نتایج
             </button>
           </div>
         </div>
@@ -254,6 +262,21 @@ const createElection = async () => {
       activeTab.value = 'manage';
     }
   } catch (err) {}
+};
+
+const endElection = async () => {
+  if (!confirm('آیا از پایان دادن به این انتخابات اطمینان دارید؟ با این کار امکان رای‌دهی بسته شده و نتایج عمومی می‌شود.')) return;
+  try {
+    const data = await fetchAuth(`${API_URL}/api/admin/manager/elections/${editData.value.id}/end`, { method: 'POST' });
+    if (data.success) {
+      alert(data.message);
+      await loadElectionsList();
+    } else {
+      alert(data.error);
+    }
+  } catch (err) {
+    alert('خطا در ارتباط با سرور');
+  }
 };
 
 const logout = () => {

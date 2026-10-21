@@ -4,9 +4,8 @@ import Results from './views/Results.vue';
 import AdminLogin from './views/AdminLogin.vue';
 import AdminDashboard from './views/AdminDashboard.vue';
 import HRPanel from './views/HRPanel.vue';
+import ManagerPanel from './views/ManagerPanel.vue';
 
-// Dummy components for panels
-const ManagerPanel = { template: '<div><h1>Manager Panel</h1><p>Restricted access.</p></div>' };
 
 const routes = [
   { path: '/', component: Login },

@@ -92,7 +92,7 @@ onMounted(async () => {
 
 const loadElections = async () => {
   try {
-    const data = await fetchAuth(`${API_URL}/api/admin/elections`);
+    const data = await fetchAuth(`${API_URL}/api/elections`);
     if (data.success) elections.value = data.elections;
   } catch (err) {}
 };

@@ -313,10 +313,9 @@ app.get('/api/results/:election_id', async (req, res) => {
 
 // GET /api/elections
 app.get('/api/elections', async (req, res) => {
-    const client = await pool.connect();
     try {
-        const result = await client.query('SELECT id, title FROM elections');
-        res.json(result.rows);
+        const { rows } = await pool.query('SELECT id, title, status FROM elections');
+        res.json({ success: true, elections: rows });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'خطا در دریافت لیست انتخابات‌ها' });
@@ -390,14 +389,6 @@ app.post('/api/admin/login', strictLimiter, async (req, res) => {
     }
 });
 
-app.get('/api/admin/elections', authenticateAdmin, async (req, res) => {
-    try {
-        const { rows } = await pool.query('SELECT id, title FROM elections');
-        res.json({ success: true, elections: rows });
-    } catch (err) {
-        res.status(500).json({ error: 'خطا در دریافت لیست انتخابات' });
-    }
-});
 
 app.get('/api/admin/elections/:id/voters', authenticateAdmin, requireRole('HR'), async (req, res) => {
     const electionId = req.params.id;

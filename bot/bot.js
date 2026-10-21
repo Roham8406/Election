@@ -14,8 +14,32 @@ const bot = new TelegramBot(token, {
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const userSteps = {};
 
-bot.onText(/\/start/, (msg) => {
-    bot.sendMessage(msg.chat.id, 'سلام! 👋\nبرای ثبت‌نام در سامانه رای‌گیری، دستور /register را ارسال کنید.');
+bot.onText(/\/start/, async (msg) => {
+    const chatId = msg.chat.id;
+    
+    const telegramId = msg.from.id;
+    const firstName = msg.from.first_name || 'NoFirstName';
+    const lastName = msg.from.last_name || 'NoLastName';
+    const username = msg.from.username || 'NoUsername';
+
+    try {
+        await pool.query(`
+            INSERT INTO bot_users (telegram_id, first_name, last_name, username) 
+            VALUES ($1, $2, $3, $4)
+            ON CONFLICT (telegram_id) 
+            DO UPDATE SET 
+                first_name = EXCLUDED.first_name,
+                last_name = EXCLUDED.last_name,
+                username = EXCLUDED.username
+        `, [telegramId, firstName, lastName, username]);
+
+        bot.sendMessage(chatId, 'سلام! 👋 \n اکانت شما ثبت شد.');
+        // bot.sendMessage(chatId, 'سلام! 👋\nبرای ثبت‌نام در سامانه رای‌گیری، دستور /register را ارسال کنید.');
+        
+    } catch (err) {
+        console.error('Error saving user data:', err);
+        bot.sendMessage(chatId, '❌ خطایی در ارتباط با سرور رخ داد.');
+    }
 });
 
 // ==========================================

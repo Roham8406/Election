@@ -214,12 +214,41 @@ app.post('/api/vote', async (req, res) => {
         client.release();
     }
 });
+
 // GET /api/results/:election_id
 app.get('/api/results/:election_id', async (req, res) => {
     const { election_id } = req.params;
+
+    let isManager = false;
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.split(' ')[1];
+        try {
+            const decoded = jwt.verify(token, JWT_SECRET);
+            if (decoded && decoded.roles && decoded.roles.includes('Manager')) {
+                isManager = true;
+            }
+        } catch (err) {
+        }
+    }
+
     const client = await pool.connect();
 
     try {
+        const electionCheck = await client.query('SELECT status FROM elections WHERE id = $1', [election_id]);
+        if (electionCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'انتخابات یافت نشد.' });
+        }
+        
+        const electionStatus = electionCheck.rows[0].status;
+
+        if (electionStatus !== 'Ended' && !isManager) {
+            return res.status(403).json({
+                success: false,
+                error: 'رای‌گیری هنوز به پایان نرسیده است. نتایج تنها پس از پایان انتخابات به صورت عمومی منتشر خواهد شد.'
+            });
+        }
+
         const votesQuery = `
             SELECT v.hashcode as public_key_hex, v.candidate_id, v.signature, c.name as candidate_name
             FROM votes v

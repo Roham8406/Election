@@ -106,7 +106,7 @@ const fetchElections = async () => {
   try {
     const response = await fetch(`${API_URL}/api/elections`);
     const data = await response.json();
-    elections.value = data;
+    elections.value = data.elections;
   } catch (err) {
     console.error('خطا در دریافت لیست انتخابات‌ها');
   } finally {

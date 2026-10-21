@@ -241,13 +241,13 @@ const deleteCandidate = async (candidateId) => {
 const createElection = async () => {
   if (!newElection.value.title) return alert('لطفاً عنوان انتخابات را وارد کنید.');
   try {
-    const data = await fetchAuth(`${API_URL}/api/elections`, {
+    const data = await fetchAuth(`${API_URL}/api/admin/manager/elections`, {
       method: 'POST',
       body: JSON.stringify(newElection.value)
     });
     if (data.success) {
       alert(data.message);
-      newElection.value = { title: '', max_votes: 5 }; // ریست کردن فرم
+      newElection.value = { title: '', max_votes: 5 };
       await loadElectionsList();
       
       selectedElection.value = data.election.id;

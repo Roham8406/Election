@@ -414,8 +414,16 @@ app.get('/api/admin/elections/:id/voters', authenticateAdmin, requireRole('HR'),
 app.post('/api/admin/voters/:id/approve', authenticateAdmin, requireRole('HR'), async (req, res) => {
     const voterId = req.params.id;
     try {
-        await pool.query('UPDATE voters SET allowed = TRUE WHERE id = $1', [voterId]);
-        res.json({ success: true, message: 'کاربر با موفقیت تایید شد.' });
+        const elecCheck = await pool.query(
+            'SELECT e.status FROM elections e JOIN voters v ON e.id = v.election_id WHERE v.id = $1', 
+            [voterId]
+        );
+        if (elecCheck.rows.length > 0 && elecCheck.rows[0].status !== 'Waiting') {
+            return res.status(403).json({ error: 'رای‌گیری شروع شده یا پایان یافته است. امکان تایید کاربر جدید وجود ندارد.' });
+        }
+
+        await pool.query('UPDATE voters SET allowed = TRUE, rejected = FALSE WHERE id = $1', [voterId]);
+        res.json({ success: true, message: 'کاربر تایید شد.' });
     } catch (err) {
         res.status(500).json({ error: 'خطا در تایید کاربر' });
     }
@@ -424,9 +432,16 @@ app.post('/api/admin/voters/:id/approve', authenticateAdmin, requireRole('HR'), 
 app.post('/api/admin/voters/:id/reject', authenticateAdmin, requireRole('HR'), async (req, res) => {
     const voterId = req.params.id;
     try {
-        await pool.query('UPDATE voters SET allowed = FALSE WHERE id = $1', [voterId]);
-                
-        res.json({ success: true, message: 'کاربر با موفقیت رد صلاحیت شد.' });
+        const elecCheck = await pool.query(
+            'SELECT e.status FROM elections e JOIN voters v ON e.id = v.election_id WHERE v.id = $1', 
+            [voterId]
+        );
+        if (elecCheck.rows.length > 0 && elecCheck.rows[0].status !== 'Waiting') {
+            return res.status(403).json({ error: 'رای‌گیری شروع شده یا پایان یافته است. امکان تغییر وضعیت وجود ندارد.' });
+        }
+
+        await pool.query('UPDATE voters SET allowed = FALSE, rejected = TRUE WHERE id = $1', [voterId]);
+        res.json({ success: true, message: 'وضعیت کاربر به رد شده تغییر یافت.' });
     } catch (err) {
         res.status(500).json({ error: 'خطا در رد صلاحیت کاربر' });
     }
@@ -442,7 +457,14 @@ app.post('/api/admin/elections/:id/voters/import', authenticateAdmin, requireRol
 
     const client = await pool.connect();
     try {
-        await client.query('BEGIN');
+
+        const elecCheck = await pool.query('SELECT status FROM elections WHERE id = $1', [electionId]);
+        if (elecCheck.rows.length > 0 && elecCheck.rows[0].status !== 'Waiting') {
+            return res.status(403).json({ error: 'زمان ثبت‌نام به پایان رسیده و رای‌گیری آغاز شده است. امکان افزودن گروهی وجود ندارد.' });
+        }
+
+        await client.query('BEGIN');  
+      
         
         for (const voter of voters) {
             await client.query(`
@@ -572,11 +594,7 @@ app.post('/api/admin/manager/elections/:id/start', authenticateAdmin, requireRol
     }
 });
 
-// ==========================================
-// CRUD انتخابات و کاندیداها برای Manager
-// ==========================================
 
-// ساخت انتخابات جدید
 app.post('/api/admin/manager/elections', authenticateAdmin, requireRole('Manager'), async (req, res) => {
     const { title, max_votes } = req.body;
     try {
@@ -591,12 +609,18 @@ app.post('/api/admin/manager/elections', authenticateAdmin, requireRole('Manager
 });
 
 app.put('/api/admin/manager/elections/:id', authenticateAdmin, requireRole('Manager'), async (req, res) => {
-    const { title, max_votes, status } = req.body;
+    const { title, max_votes } = req.body;
     const electionId = req.params.id;
     try {
+        const check = await pool.query('SELECT status FROM elections WHERE id = $1', [electionId]);
+        if (check.rows.length === 0) return res.status(404).json({ error: 'انتخابات یافت نشد' });
+        if (check.rows[0].status === 'Ended') {
+            return res.status(403).json({ error: 'انتخابات پایان‌یافته به هیچ وجه قابل ویرایش نیست.' });
+        }
+
         await pool.query(
-            'UPDATE elections SET title = $1, max_votes = $2, status = $3 WHERE id = $4',
-            [title, max_votes, status, electionId]
+            'UPDATE elections SET title = $1, max_votes = $2 WHERE id = $3',
+            [title, max_votes, electionId]
         );
         res.json({ success: true, message: 'انتخابات با موفقیت بروزرسانی شد.' });
     } catch (err) {

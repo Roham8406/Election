@@ -572,6 +572,73 @@ app.post('/api/admin/manager/elections/:id/start', authenticateAdmin, requireRol
     }
 });
 
+// ==========================================
+// CRUD انتخابات و کاندیداها برای Manager
+// ==========================================
+
+// ساخت انتخابات جدید
+app.post('/api/admin/manager/elections', authenticateAdmin, requireRole('Manager'), async (req, res) => {
+    const { title, max_votes } = req.body;
+    try {
+        const { rows } = await pool.query(
+            'INSERT INTO elections (title, max_votes) VALUES ($1, $2) RETURNING *',
+            [title, max_votes || 5]
+        );
+        res.json({ success: true, election: rows[0], message: 'انتخابات جدید ساخته شد.' });
+    } catch (err) {
+        res.status(500).json({ error: 'خطا در ساخت انتخابات' });
+    }
+});
+
+app.put('/api/admin/manager/elections/:id', authenticateAdmin, requireRole('Manager'), async (req, res) => {
+    const { title, max_votes, status } = req.body;
+    const electionId = req.params.id;
+    try {
+        await pool.query(
+            'UPDATE elections SET title = $1, max_votes = $2, status = $3 WHERE id = $4',
+            [title, max_votes, status, electionId]
+        );
+        res.json({ success: true, message: 'انتخابات با موفقیت بروزرسانی شد.' });
+    } catch (err) {
+        res.status(500).json({ error: 'خطا در ویرایش انتخابات' });
+    }
+});
+
+
+app.get('/api/admin/manager/elections/:id/candidates', authenticateAdmin, requireRole('Manager'), async (req, res) => {
+    const electionId = req.params.id;
+    try {
+        const { rows } = await pool.query('SELECT * FROM candidates WHERE election_id = $1 ORDER BY name ASC', [electionId]);
+        res.json({ success: true, candidates: rows });
+    } catch (err) {
+        res.status(500).json({ error: 'خطا در دریافت لیست کاندیداها' });
+    }
+});
+
+app.post('/api/admin/manager/elections/:id/candidates', authenticateAdmin, requireRole('Manager'), async (req, res) => {
+    const electionId = req.params.id;
+    const { name } = req.body;
+    try {
+        const { rows } = await pool.query(
+            'INSERT INTO candidates (election_id, name) VALUES ($1, $2) RETURNING *', 
+            [electionId, name]
+        );
+        res.json({ success: true, candidate: rows[0], message: 'کاندیدا اضافه شد.' });
+    } catch (err) {
+        res.status(500).json({ error: 'خطا در ثبت کاندیدا' });
+    }
+});
+
+app.delete('/api/admin/manager/candidates/:id', authenticateAdmin, requireRole('Manager'), async (req, res) => {
+    const candidateId = req.params.id;
+    try {
+        await pool.query('DELETE FROM candidates WHERE id = $1', [candidateId]);
+        res.json({ success: true, message: 'کاندیدا حذف شد.' });
+    } catch (err) {
+        res.status(500).json({ error: 'خطا در حذف کاندیدا' });
+    }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);

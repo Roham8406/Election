@@ -1,12 +1,30 @@
 <template>
-  <div class="card" style="max-width: 400px; margin: 50px auto;">
-    <h2>Admin Login</h2>
-    <form @submit.prevent="handleLogin">
-      <input v-model="username" type="text" placeholder="Username" required style="width: 100%; margin-bottom: 15px; padding: 10px;" />
-      <input v-model="password" type="password" placeholder="Password" required style="width: 100%; margin-bottom: 15px; padding: 10px;" />
-      <button type="submit" style="width: 100%; padding: 10px; background: #333; color: white;">Login</button>
-    </form>
-    <p v-if="error" style="color: red; margin-top: 10px;">{{ error }}</p>
+  <div class="page-container" dir="rtl">
+    <div class="card">
+      <h2>ورود به پنل مدیریت</h2>
+
+      <form @submit.prevent="handleLogin" class="form-layout">
+        <input 
+          v-model="username" 
+          type="text" 
+          placeholder="Username" 
+          required 
+          class="input-field" 
+        />
+        <input 
+          v-model="password" 
+          type="password" 
+          placeholder="Password" 
+          required 
+          class="input-field" 
+        />
+        <button type="submit" class="btn-primary" :disabled="loading">
+          {{ loading ? 'در حال بررسی...' : 'ورود' }}
+        </button>
+      </form>
+      
+      <p v-if="error" class="text-error mt-15">{{ error }}</p>
+    </div>
   </div>
 </template>
 
@@ -17,10 +35,14 @@ import { useRouter } from 'vue-router';
 const username = ref('');
 const password = ref('');
 const error = ref('');
+const loading = ref(false);
 const router = useRouter();
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL || '';
 
 const handleLogin = async () => {
+  error.value = '';
+  loading.value = true;
+
   try {
     const res = await fetch(`${API_URL}/api/admin/login`, {
       method: 'POST',
@@ -39,10 +61,12 @@ const handleLogin = async () => {
         router.push('/admin/dashboard');
       }
     } else {
-      error.value = data.error;
+      error.value = data.error || 'اطلاعات ورود نامعتبر است.';
     }
   } catch (err) {
     error.value = 'خطا در ارتباط با سرور';
+  } finally {
+    loading.value = false;
   }
 };
 </script>

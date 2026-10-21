@@ -1,12 +1,12 @@
 <template>
   <div class="page-container" dir="rtl">
-    <div class="card" style="max-width: 700px;">
-      <h1>📊 نتایج زنده انتخابات</h1>
+    <div class="card panel-md">
+      <h1>نتایج انتخابات</h1>
       
-      <div style="margin-bottom: 30px; background: #f5f5f5; padding: 15px; border-radius: 8px;">
-        <p style="margin-top: 0; font-weight: bold;">لطفاً انتخابات مورد نظر را انتخاب کنید:</p>
+      <div class="section-card bg-shaded">
+        <p class="form-label mt-0">لطفاً انتخابات مورد نظر را انتخاب کنید:</p>
         
-        <div v-if="loadingElections" style="text-align: center; color: gray;">
+        <div v-if="loadingElections" class="text-center text-muted mt-15">
           ⏳ در حال دریافت لیست انتخابات‌ها...
         </div>
         
@@ -14,7 +14,8 @@
           v-else 
           v-model="selectedElectionId" 
           @change="fetchResults(selectedElectionId)"
-          style="width: 100%; padding: 12px; border-radius: 6px; border: 1px solid var(--border); font-family: inherit; font-size: 16px; cursor: pointer;"
+          class="input-field full-width mt-5"
+          style="cursor: pointer;"
         >
           <option value="" disabled selected>-- یک انتخابات را انتخاب کنید --</option>
           <option v-for="election in elections" :key="election.id" :value="election.id">
@@ -23,62 +24,64 @@
         </select>
       </div>
 
-      <div v-if="loadingResults" style="text-align: center; margin-top: 20px;">
-        <p>⏳ در حال استخراج آرا و بررسی امضاهای دیجیتال...</p>
-        <small style="color: gray;">(این عملیات برای جلوگیری از تقلب کمی زمان‌بر است)</small>
+      <div v-if="loadingResults" class="text-center mt-20">
+        <p class="text-dark" style="font-weight: bold;">⏳ در حال استخراج آرا و بررسی امضاهای دیجیتال...</p>
+        <small class="text-muted">(این عملیات برای جلوگیری از تقلب کمی زمان‌بر است)</small>
       </div>
 
-      <div v-if="error" class="text-error" style="background: #ffebee; padding: 15px; border-radius: 8px; margin-top: 20px;">
-        <h3 style="margin-top: 0;">{{ error }}</h3>
-        <p style="margin-bottom: 0;">{{ errorDetails }}</p>
+      <div v-if="error" class="alert-box alert-error text-center mt-20">
+        <h3 class="mt-0 mb-15">{{ error }}</h3>
+        <p class="m-0">{{ errorDetails }}</p>
       </div>
 
-      <div v-if="!loadingResults && !error && results.length > 0" style="margin-top: 20px;">
-        <div style="background: #e8f5e9; color: #2e7d32; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
+      <div v-if="!loadingResults && !error && results.length > 0" class="mt-20">
+        
+        <div class="alert-box alert-success text-center mb-20">
           <strong>{{ successMessage }}</strong><br>
-          <small>تعداد برگه رای تایید شده: {{ totalVoters }}</small>
+          <small class="text-dark">تعداد برگه رای تایید شده: {{ totalVoters }}</small>
         </div>
 
-        <table style="width: 100%; border-collapse: collapse; text-align: right; margin-top: 10px;">
+        <table class="data-table">
           <thead>
-            <tr style="border-bottom: 2px solid var(--border); background: #f9f9f9;">
-              <th style="padding: 12px; border-top-right-radius: 8px;">نام کاندیدا</th>
-              <th style="padding: 12px; text-align: center; border-top-left-radius: 8px;">تعداد رای تایید شده</th>
+            <tr>
+              <th>نام کاندیدا</th>
+              <th class="text-center">تعداد رای تایید شده</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(cand, index) in results" :key="index" style="border-bottom: 1px solid #eee;">
-              <td style="padding: 12px; font-weight: bold;">{{ cand.name }}</td>
-              <td style="padding: 12px; text-align: center; font-size: 1.2em; color: var(--primary-color);">
+            <tr v-for="(cand, index) in results" :key="index">
+              <td class="text-dark" style="font-weight: bold;">{{ cand.name }}</td>
+              <td class="text-center text-large text-accent">
                 {{ cand.votes }}
               </td>
             </tr>
           </tbody>
         </table>
+
+        <div class="text-center text-dark mt-15" style="font-weight: bold;">
+           تعداد آرای سفید: {{ blankVotes }}
+        </div>
       </div>
       
-      <div v-if="!loadingResults && !error && selectedElectionId && results.length === 0" style="text-align: center; margin-top: 20px; color: gray;">
+      <div v-if="!loadingResults && !error && selectedElectionId && results.length === 0" class="text-center text-muted mt-20">
         <p>هنوز هیچ رای معتبری برای این انتخابات ثبت نشده است.</p>
       </div>
       
-      <div style="margin-top: 15px; font-weight: bold; text-align: center;">
-         تعداد آرای سفید: {{ blankVotes }}
-      </div>
-
-      <hr style="margin: 40px 0; border: 0; border-top: 1px solid #ddd;" />
-
-      <div v-if="votersList.length > 0" style="background: #fdfdfd; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
-        <h3 style="margin-top: 0;">📜 دفتر کل آرا (Bulletin Board)</h3>
-        <p style="font-size: 0.9em; color: gray;">
-          کدهای زیر، کلید عمومی (Public Key) تمام کسانی است که رای‌شان در سیستم ثبت و شمرده شده است. شما می‌توانید با محاسبه کلید عمومی خود، حضور رای‌تان را پیگیری کنید.
-        </p>
-        
-        <div style="max-height: 200px; overflow-y: auto; background: #222; color: #0f0; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 11px; text-align: left; direction: ltr;">
-          <div v-for="(pubKey, index) in votersList" :key="index" style="margin-bottom: 5px; word-break: break-all;">
-            {{ index + 1 }}. {{ pubKey }}
+      <template v-if="votersList.length > 0">
+        <hr class="divider" />
+        <div class="section-card mt-0">
+          <h3 class="text-dark mt-0">📜 دفتر کل آرا (Bulletin Board)</h3>
+          <p class="text-muted mb-15" style="font-size: 0.9em;">
+            کدهای زیر، کلید عمومی (Public Key) تمام کسانی است که رای‌شان در سیستم ثبت و شمرده شده است. شما می‌توانید با جستجوی کلید عمومی خود، حضور رای‌تان را پیگیری کنید.
+          </p>
+          
+          <div class="bulletin-board">
+            <div v-for="(pubKey, index) in votersList" :key="index" class="bulletin-board-item">
+              {{ index + 1 }}. {{ pubKey }}
+            </div>
           </div>
         </div>
-      </div>
+      </template>
 
     </div>
   </div>
@@ -87,7 +90,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL || '';
 
 const elections = ref([]);
 const selectedElectionId = ref('');

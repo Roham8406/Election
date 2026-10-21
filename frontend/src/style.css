@@ -414,6 +414,260 @@ button:active:not(:disabled) {
   flex-grow: 1;
 }
 
+.form-layout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.form-layout .input-field,
+.form-layout .btn-primary {
+  margin: 0;
+}
+
+/* --------------------------------------
+   Admin Panels & Layouts
+--------------------------------------- */
+.panel-wide {
+  max-width: 850px;
+  margin-top: 0;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+/* --------------------------------------
+   Tabs Navigation
+--------------------------------------- */
+.tabs-container {
+  display: flex;
+  border-bottom: 2px solid var(--border-light);
+  margin-bottom: 24px;
+  gap: 8px;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  border-bottom: 3px solid transparent;
+  font-weight: 600;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: all 0.3s ease;
+}
+
+.tab-btn:hover {
+  opacity: 1;
+  background: var(--bg-h);
+  transform: none;
+  box-shadow: none;
+}
+
+.tab-btn.active {
+  opacity: 1;
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+/* --------------------------------------
+   Alerts & Status Boxes
+--------------------------------------- */
+.alert-box {
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  font-weight: 500;
+  text-align: right;
+}
+.alert-success { background: rgba(43, 138, 62, 0.1); color: #2b8a3e; border: 1px solid #2b8a3e; }
+.alert-error { background: rgba(201, 42, 42, 0.1); color: #c92a2a; border: 1px solid #c92a2a; }
+.alert-info { background: rgba(33, 150, 243, 0.1); color: #0d47a1; border: 1px solid #2196F3; }
+
+/* --------------------------------------
+   Data Tables
+--------------------------------------- */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: right;
+  background: var(--bg);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.data-table th {
+  background-color: var(--bg-h);
+  color: var(--text-h);
+  padding: 14px;
+  font-weight: 600;
+}
+
+.data-table td {
+  padding: 14px;
+  border-bottom: 1px solid var(--border-light);
+  vertical-align: middle;
+}
+
+.data-table tr:last-child td {
+  border-bottom: none;
+}
+
+.data-table .action-cell {
+  display: flex;
+  gap: 10px;
+}
+
+/* --------------------------------------
+   Modifiers
+--------------------------------------- */
+.full-width {
+  max-width: 100% !important;
+  width: 100%;
+}
+.btn-small {
+  padding: 6px 14px;
+  margin: 0;
+  max-width: fit-content;
+  font-size: 0.9rem;
+}
+
+/* --------------------------------------
+   Layout & Utility Classes
+--------------------------------------- */
+.flex-row { display: flex; gap: 15px; }
+.flex-1 { flex: 1; }
+.items-stretch { align-items: stretch; }
+.text-center { text-align: center; }
+.text-warning { color: #f57f17; }
+.m-0 { margin: 0 !important; }
+.mt-0 { margin-top: 0; }
+.mt-5 { margin-top: 5px; }
+.mb-15 { margin-bottom: 15px; }
+
+/* --------------------------------------
+   Component Classes
+--------------------------------------- */
+.section-card {
+  border: 1px solid var(--border-light);
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+.section-card.bg-shaded {
+  background: var(--bg-h);
+}
+
+.grid-form {
+  display: grid;
+  grid-template-columns: 2fr 1fr auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.btn-delete {
+  margin: 0;
+  text-decoration: none;
+  font-weight: bold;
+  font-size: 16px;
+}
+/* --------------------------------------
+   Results Page & Utilities
+--------------------------------------- */
+.panel-md {
+  max-width: 700px;
+}
+
+.text-large {
+  font-size: 1.2em;
+  font-weight: bold;
+}
+
+.text-accent {
+  color: var(--accent);
+}
+
+.divider {
+  margin: 40px 0;
+  border: 0;
+  border-top: 1px solid var(--border-light);
+}
+
+.bulletin-board {
+  max-height: 200px;
+  overflow-y: auto;
+  background: #1a1a1a;
+  color: #4caf50;
+  padding: 15px;
+  border-radius: 8px;
+  font-family: var(--mono);
+  font-size: 12px;
+  text-align: left;
+  direction: ltr;
+  border: 1px solid #333;
+}
+
+.bulletin-board-item {
+  margin-bottom: 6px;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed rgba(76, 175, 80, 0.2);
+  word-break: break-all;
+}
+
+.bulletin-board-item:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+/* --------------------------------------
+   Input Wrappers (Password Toggle)
+--------------------------------------- */
+.input-icon-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 280px;
+  margin: 0 auto;
+}
+
+.input-icon-wrapper .input-field {
+  padding-right: 40px !important; /* فضا برای آیکون چشم در حالت RTL */
+  width: 100%;
+  margin: 0; 
+}
+
+.input-icon-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: var(--text);
+  opacity: 0.5;
+  transition: opacity 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.input-icon-toggle:hover {
+  opacity: 0.9;
+} 
+
 @media (max-width: 1024px) {
   #center { padding: 32px 20px 24px; gap: 18px; }
   h1 { font-size: 32px !important; }

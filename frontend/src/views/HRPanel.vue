@@ -8,6 +8,7 @@
     <div style="display: flex; border-bottom: 2px solid #eee; margin-bottom: 20px;">
       <button @click="activeTab = 'approvals'" :style="activeTab === 'approvals' ? activeTabStyle : inactiveTabStyle">✅ مدیریت رای‌دهندگان</button>
       <button @click="activeTab = 'import'" :style="activeTab === 'import' ? activeTabStyle : inactiveTabStyle">📥 ورود گروهی (Import)</button>
+      <button @click="activeTab = 'bot_users'; fetchBotUsers()" :style="activeTab === 'bot_users' ? activeTabStyle : inactiveTabStyle">🤖 کاربران ربات</button>
     </div>
 
     <div v-if="selectedElectionDetails" style="margin-bottom: 15px; padding: 10px; border-radius: 4px;" :style="{ background: selectedElectionDetails.status === 'Waiting' ? '#e8f5e9' : '#ffebee', color: selectedElectionDetails.status === 'Waiting' ? 'green' : 'red' }">
@@ -93,6 +94,31 @@
             لطفاً برای نمایش کادر ورود اطلاعات، ابتدا یک انتخابات را از لیست بالا انتخاب کنید.
         </div>
     </div>
+    <div v-if="activeTab === 'bot_users'">
+      <div style="margin-bottom: 15px; padding: 10px; background: #e3f2fd; color: #0d47a1; border-radius: 4px;">
+        <strong>لیست کل کاربران:</strong> افرادی که دکمه Start ربات را زده‌اند در اینجا نمایش داده می‌شوند.
+      </div>
+      
+      <table style="width: 100%; border-collapse: collapse; text-align: left;" dir="rtl">
+        <tr style="background-color: #f5f5f5;">
+          <th style="padding: 10px;">آیدی تلگرام</th>
+          <th style="padding: 10px;">نام</th>
+          <th style="padding: 10px;">نام خانوادگی</th>
+          <th style="padding: 10px;">یوزرنیم</th>
+          <th style="padding: 10px;">تاریخ عضویت</th>
+        </tr>
+        <tr v-for="user in botUsers" :key="user.telegram_id" style="border-bottom: 1px solid #eee;">
+          <td style="padding: 10px; font-family: monospace;">{{ user.telegram_id }}</td>
+          <td style="padding: 10px;">{{ user.first_name || '-' }}</td>
+          <td style="padding: 10px;">{{ user.last_name || '-' }}</td>
+          <td style="padding: 10px;" dir="ltr">{{ user.username ? '@' + user.username : '-' }}</td>
+          <td style="padding: 10px;" dir="ltr">{{ new Date(user.joined_at).toLocaleString('fa-IR') }}</td>
+        </tr>
+        <tr v-if="botUsers.length === 0">
+          <td colspan="5" style="text-align: center; padding: 20px;">هنوز هیچ کاربری ربات را استارت نزده است.</td>
+        </tr>
+      </table>
+    </div>
   </div>
 </template>
 
@@ -106,6 +132,7 @@ const elections = ref([]);
 const selectedElection = ref('');
 const votersList = ref([]);
 const bulkInput = ref('');
+const botUsers = ref([]);
 
 const activeTabStyle = "flex: 1; padding: 12px; border: none; border-bottom: 3px solid #2196F3; background: transparent; font-weight: bold; color: #2196F3; cursor: pointer;";
 const inactiveTabStyle = "flex: 1; padding: 12px; border: none; border-bottom: 3px solid transparent; background: transparent; color: #777; cursor: pointer;";
@@ -216,6 +243,19 @@ const insertBulkVoters = async () => {
     }
   } catch (err) {
     alert('خطا در ارتباط با سرور هنگام ذخیره گروهی.');
+  }
+};
+
+const fetchBotUsers = async () => {
+  try {
+    const data = await fetchAuth(`${API_URL}/api/admin/bot-users`);
+    if (data.success) {
+      botUsers.value = data.users;
+    } else {
+      alert(data.error || 'خطا در دریافت لیست کاربران');
+    }
+  } catch (err) {
+    alert('خطا در ارتباط با سرور هنگام دریافت کاربران ربات.');
   }
 };
 

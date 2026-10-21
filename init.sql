@@ -63,6 +63,15 @@ CREATE TABLE IF NOT EXISTS admin_roles (
     PRIMARY KEY (admin_id, role_id)
 );
 
+-- 9. ُTelegram Users
+CREATE TABLE IF NOT EXISTS bot_users (
+    telegram_id BIGINT PRIMARY KEY,
+    first_name VARCHAR(255),
+    last_name VARCHAR(255),
+    username VARCHAR(255),
+    joined_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 INSERT INTO roles (name, panel_url) VALUES ('Manager', '/Manager_Panel'), ('HR', '/HR_Panel') ON CONFLICT DO NOTHING;
 
 CREATE INDEX idx_candidates_election ON candidates(election_id);

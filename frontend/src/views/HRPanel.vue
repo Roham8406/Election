@@ -10,6 +10,12 @@
       <button @click="activeTab = 'import'" :style="activeTab === 'import' ? activeTabStyle : inactiveTabStyle">📥 ورود گروهی (Import)</button>
     </div>
 
+    <div v-if="selectedElectionDetails" style="margin-bottom: 15px; padding: 10px; border-radius: 4px;" :style="{ background: selectedElectionDetails.status === 'Waiting' ? '#e8f5e9' : '#ffebee', color: selectedElectionDetails.status === 'Waiting' ? 'green' : 'red' }">
+      <strong>وضعیت انتخابات: </strong>
+      <span v-if="selectedElectionDetails.status === 'Waiting'">در انتظار شروع</span>
+      <span v-else>در حال برگزاری / پایان یافته</span>
+    </div>
+
     <div v-if="activeTab === 'approvals'">
       <div style="margin-bottom: 20px;">
         <label>انتخابات مورد نظر را انتخاب کنید:</label>
@@ -37,14 +43,16 @@
             <button 
                 v-if="!user.allowed" 
                 @click="triggerApprove(user.id)" 
-                style="background: #4CAF50; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;"
+                :disabled="selectedElectionDetails?.status !== 'Waiting'"
+                :style="{ background: selectedElectionDetails?.status === 'Waiting' ? '#4CAF50' : '#ccc', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: selectedElectionDetails?.status === 'Waiting' ? 'pointer' : 'not-allowed' }"
             >
                 تایید
             </button>
             <button 
                 v-if="user.allowed" 
                 @click="triggerReject(user.id)" 
-                style="background: #f44336; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;"
+                :disabled="selectedElectionDetails?.status !== 'Waiting'"
+                :style="{ background: selectedElectionDetails?.status === 'Waiting' ? '#f44336' : '#ccc', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: selectedElectionDetails?.status === 'Waiting' ? 'pointer' : 'not-allowed' }"
             >
                 لغو تایید (رد)
             </button>
@@ -56,11 +64,10 @@
       </table>
     </div>
 
-
     <div v-if="activeTab === 'import'">
         <div style="margin-bottom: 20px;">
             <label>۱. ابتدا انتخابات مورد نظر را انتخاب کنید:</label>
-            <select v-model="selectedElection" style="width: 100%; padding: 10px; margin-top: 5px;">
+            <select v-model="selectedElection" @change="fetchVoters" style="width: 100%; padding: 10px; margin-top: 5px;">
             <option disabled value="">یک مورد را انتخاب کنید...</option>
             <option v-for="el in elections" :key="el.id" :value="el.id">{{ el.title }}</option>
             </select>
@@ -76,7 +83,8 @@
             
             <button 
             @click="insertBulkVoters" 
-            style="margin-top: 15px; width: 100%; padding: 12px; background: #2196F3; color: white; border: none; border-radius: 4px; font-size: 16px; font-weight: bold; cursor: pointer;"
+            :disabled="selectedElectionDetails?.status !== 'Waiting'"
+            :style="{ marginTop: '15px', width: '100%', padding: '12px', background: selectedElectionDetails?.status === 'Waiting' ? '#2196F3' : '#ccc', color: 'white', border: 'none', borderRadius: '4px', fontSize: '16px', fontWeight: 'bold', cursor: selectedElectionDetails?.status === 'Waiting' ? 'pointer' : 'not-allowed' }"
             >
             وارد کردن به سیستم (Insert)
             </button>
@@ -89,7 +97,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
@@ -99,10 +107,13 @@ const selectedElection = ref('');
 const votersList = ref([]);
 const bulkInput = ref('');
 
-
 const activeTabStyle = "flex: 1; padding: 12px; border: none; border-bottom: 3px solid #2196F3; background: transparent; font-weight: bold; color: #2196F3; cursor: pointer;";
 const inactiveTabStyle = "flex: 1; padding: 12px; border: none; border-bottom: 3px solid transparent; background: transparent; color: #777; cursor: pointer;";
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+const selectedElectionDetails = computed(() => {
+  return elections.value.find(e => e.id === selectedElection.value) || null;
+});
 
 const fetchAuth = async (url, options = {}) => {
   const token = localStorage.getItem('admin_token');
@@ -143,6 +154,8 @@ const triggerApprove = async (userId) => {
       if (userIndex !== -1) {
         votersList.value[userIndex].allowed = true;
       }
+    } else {
+      alert(data.error);
     }
   } catch (err) {}
 };
@@ -156,6 +169,8 @@ const triggerReject = async (userId) => {
         votersList.value[userIndex].allowed = false;
         votersList.value[userIndex].rejected = true;
       }
+    } else {
+      alert(data.error);
     }
   } catch (err) {}
 };
@@ -196,6 +211,8 @@ const insertBulkVoters = async () => {
       bulkInput.value = ''; 
       activeTab.value = 'approvals';
       fetchVoters();
+    } else {
+      alert(data.error);
     }
   } catch (err) {
     alert('خطا در ارتباط با سرور هنگام ذخیره گروهی.');

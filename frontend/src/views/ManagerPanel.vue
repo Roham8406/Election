@@ -46,7 +46,7 @@
 
         <div style="background: #fff; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ddd;">
           <h3 style="margin-top: 0; margin-bottom: 15px;">✏️ ویرایش مشخصات</h3>
-          <div style="display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 10px; align-items: end;">
+          <div style="display: grid; grid-template-columns: 2fr 1fr auto; gap: 10px; align-items: end;">
             <div>
               <label>عنوان:</label>
               <input v-model="editData.title" type="text" style="width: 100%; padding: 8px; margin-top: 5px;">
@@ -54,14 +54,6 @@
             <div>
               <label>حداکثر رای:</label>
               <input v-model="editData.max_votes" type="number" style="width: 100%; padding: 8px; margin-top: 5px;">
-            </div>
-            <div>
-              <label>وضعیت:</label>
-              <select v-model="editData.status" style="width: 100%; padding: 8px; margin-top: 5px;">
-                <option value="Waiting">Waiting</option>
-                <option value="Started">Started</option>
-                <option value="Ended">Ended</option>
-              </select>
             </div>
             <button @click="saveElectionChanges" style="padding: 10px 15px; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer;">ذخیره تغییرات</button>
           </div>
@@ -152,10 +144,17 @@ const loadElectionsList = async () => {
   try {
     const data = await fetchAuth(`${API_URL}/api/elections`);
     if (data.success) {
-      elections.value = data.elections;
+      elections.value = data.elections.filter(e => e.status !== 'Ended');
+      
       if (editData.value.id) {
         const updated = elections.value.find(e => e.id === editData.value.id);
-        if (updated) editData.value = { ...updated };
+        if (updated) {
+          editData.value = { ...updated };
+        } else {
+          editData.value = { id: null, title: '', max_votes: 5, status: 'Waiting' };
+          selectedElection.value = '';
+          candidates.value = [];
+        }
       }
     }
   } catch (err) {}

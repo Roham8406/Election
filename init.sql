@@ -99,22 +99,6 @@ EXECUTE FUNCTION enforce_max_votes();
 
 
 
--- Dummy Entities
-INSERT INTO elections (id, title, max_votes)
-VALUES ('550e8400-e29b-41d4-a716-446655440000', 'انتخابات نماینده مدیران فنی', 2)
-ON CONFLICT DO NOTHING;
-
-INSERT INTO candidates (election_id, name) VALUES
-('550e8400-e29b-41d4-a716-446655440000', 'آلن تورینگ'),
-('550e8400-e29b-41d4-a716-446655440000', 'لینوس توروالدز'),
-('550e8400-e29b-41d4-a716-446655440000', 'گریس هاپر'),
-('550e8400-e29b-41d4-a716-446655440000', 'تیم برنرز لی');
-
-INSERT INTO voter_hashes (hashcode, election_id) VALUES
-('CODE-1234', '550e8400-e29b-41d4-a716-446655440000'),
-('CODE-5678', '550e8400-e29b-41d4-a716-446655440000'),
-('CODE-9999', '550e8400-e29b-41d4-a716-446655440000')
-ON CONFLICT DO NOTHING;
 
 INSERT INTO admins (username, password) 
 VALUES 

@@ -455,7 +455,7 @@ app.post('/api/admin/elections/:id/voters/import', authenticateAdmin, requireRol
     }
 });
 
-app.get('/api/admin/manager/elections/:id/check-bot', authenticateAdmin, requireRole('Manager'), async (req, res) => {
+app.get('/api/admin/manager/elections/:id/check-status', authenticateAdmin, requireRole('Manager'), async (req, res) => {
     const electionId = req.params.id;
     if (!bot) return res.status(500).json({ error: 'توکن تلگرام در بک‌ند تنظیم نشده است.' });
 

@@ -103,7 +103,7 @@ const updateSelectedDetails = () => {
 
 const checkBotStatus = async () => {
   try {
-    const data = await fetchAuth(`${API_URL}/api/admin/manager/elections/${selectedElection.value}/check-bot`);
+    const data = await fetchAuth(`${API_URL}/api/admin/manager/elections/${selectedElection.value}/check-status`);    
     if (data.success) alert(data.message);
   } catch (err) {}
 };

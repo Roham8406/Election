@@ -104,7 +104,7 @@ app.post('/api/login', async (req, res) => {
 
     try {
         const electionQuery = `
-            SELECT e.id as election_id, e.title, e.max_votes 
+            SELECT e.id as election_id, e.title, e.max_votes, e.status 
             FROM voter_hashes vh
             JOIN elections e ON vh.election_id = e.id
             WHERE vh.hashcode = $1
@@ -116,6 +116,15 @@ app.post('/api/login', async (req, res) => {
         }
         
         const election = electionResult.rows[0];
+
+        if (election.status !== 'Started') {
+            return res.status(403).json({ error: 'این انتخابات در حال حاضر فعال نیست (شروع نشده یا پایان یافته است).' });
+        }
+
+        const voteCheck = await pool.query('SELECT 1 FROM votes WHERE hashcode = $1 LIMIT 1', [pubKeyHex]);
+        if (voteCheck.rows.length > 0) {
+            return res.status(403).json({ error: 'شما قبلاً در این انتخابات رای داده‌اید و امکان رای مجدد وجود ندارد.' });
+        }
 
         const candidatesQuery = `SELECT id, name FROM candidates WHERE election_id = $1`;
         const candidatesResult = await pool.query(candidatesQuery, [election.election_id]);
@@ -142,7 +151,7 @@ app.post('/api/vote', async (req, res) => {
         return res.status(400).json({ error: 'کد رای‌گیری نامعتبر است (لطفاً از اضافه کردن حروف یا فاصله خودداری کنید).' });
     }
 
-    if (!privKeyHex || !Array.isArray(candidate_ids)) {
+    if (!Array.isArray(candidate_ids)) {
         return res.status(400).json({ error: 'ورودی نامعتبر است.' });
     }
 
@@ -166,7 +175,7 @@ app.post('/api/vote', async (req, res) => {
         await client.query('BEGIN');
 
         const limitCheck = await client.query(`
-            SELECT e.max_votes 
+            SELECT e.max_votes, e.status
             FROM voter_hashes vh
             JOIN elections e ON vh.election_id = e.id
             WHERE vh.hashcode = $1
@@ -176,7 +185,18 @@ app.post('/api/vote', async (req, res) => {
             throw new Error('Invalid hashcode');
         }
 
-        const maxVotes = limitCheck.rows[0].max_votes;
+        const election = limitCheck.rows[0];
+
+        if (election.status !== 'Started') {
+            return res.status(403).json({ error: 'زمان رای‌گیری به پایان رسیده یا هنوز شروع نشده است.' });
+        }
+
+        const existingVoteCheck = await client.query('SELECT 1 FROM votes WHERE hashcode = $1 LIMIT 1', [pubKeyHex]);
+        if (existingVoteCheck.rows.length > 0) {
+            return res.status(403).json({ error: 'شما قبلا رای داده‌اید. امکان ثبت مجدد رای وجود ندارد.' });
+        }
+
+        const maxVotes = election.max_votes;
         if (candidate_ids.length > maxVotes) {
             return res.status(400).json({ error: `باید حداکثر به ${maxVotes} کاندید رای داد` });
         }

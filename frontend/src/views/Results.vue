@@ -120,9 +120,19 @@ const fetchResults = async (id) => {
   error.value = '';
   errorDetails.value = '';
   results.value = [];
-  
   try {
-    const response = await fetch(`${API_URL}/api/results/${id}`);
+    const token = localStorage.getItem('admin_token');
+    const headers = {
+      'Content-Type': 'application/json'
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${API_URL}/api/results/${id}`, {
+      method: 'GET',
+      headers: headers
+    });
     const data = await response.json();
     
     if (response.ok && data.success) {

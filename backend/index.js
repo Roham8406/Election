@@ -313,6 +313,7 @@ app.get('/api/results/:election_id', async (req, res) => {
 
 // GET /api/elections
 app.get('/api/elections', async (req, res) => {
+    const client = await pool.connect();
     try {
         const { rows } = await pool.query('SELECT id, title, status FROM elections');
         res.json({ success: true, elections: rows });

@@ -506,8 +506,7 @@ app.post('/api/admin/elections/:id/voters/import', authenticateAdmin, requireRol
 
     const client = await pool.connect();
     try {
-
-        const elecCheck = await pool.query('SELECT status FROM elections WHERE id = $1', [electionId]);
+        const elecCheck = await client.query('SELECT status FROM elections WHERE id = $1', [electionId]);
         if (elecCheck.rows.length > 0 && elecCheck.rows[0].status !== 'Waiting') {
             return res.status(403).json({ error: 'زمان ثبت‌نام به پایان رسیده و رای‌گیری آغاز شده است. امکان افزودن گروهی وجود ندارد.' });
         }
@@ -516,7 +515,10 @@ app.post('/api/admin/elections/:id/voters/import', authenticateAdmin, requireRol
         let addedCount = 0;
 
         for (const v of voters) {
-            const cleanUsername = v.username.replace('@', '').trim();
+            if (!v.username || !v.name) continue;
+
+            const cleanUsername = String(v.username).replace('@', '').trim();
+            
             const botUser = await client.query('SELECT telegram_id FROM bot_users WHERE LOWER(username) = LOWER($1)', [cleanUsername]);
             const telegramId = botUser.rows.length > 0 ? botUser.rows[0].telegram_id : null;
 
@@ -535,12 +537,12 @@ app.post('/api/admin/elections/:id/voters/import', authenticateAdmin, requireRol
         res.json({ success: true, message: `${addedCount} کاربر با موفقیت پردازش و اضافه شدند.` });
     } catch (err) {
         await client.query('ROLLBACK');
+        console.error('Import Error:', err); // چاپ خطای دقیق اس‌کیو‌ال یا نودجی‌اس در ترمینال
         res.status(500).json({ error: 'خطا در ذخیره لیست کاربران' });
     } finally {
         client.release();
     }
 });
-
 app.get('/api/admin/bot-users', authenticateAdmin, requireRole('HR'), async (req, res) => {
     try {
         const { rows } = await pool.query('SELECT telegram_id, first_name, last_name, username, joined_at FROM bot_users ORDER BY joined_at DESC');

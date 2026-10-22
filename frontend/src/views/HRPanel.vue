@@ -54,17 +54,18 @@
 
         <table v-if="selectedElection" class="data-table mt-20">
           <tr>
-            <th>تلگرام آیدی</th>
+            <th>یوزرنیم</th>
             <th>نام</th>
+            <th>تلگرام آیدی</th>
             <th>وضعیت</th>
             <th>عملیات</th>
           </tr>
           <tr v-for="user in votersList" :key="user.id">
-            <td dir="ltr" style="text-align: right; font-family: var(--mono);">{{ user.telegram_id }}</td>
+            <td dir="ltr" style="font-family: var(--mono); text-align: right;">@{{ user.username }}</td>
             <td>{{ user.name }}</td>
-            <td>
-              <span v-if="user.allowed" class="text-success" style="margin: 0; font-weight: bold;">تایید شده</span>
-              <span v-else class="text-error" style="margin: 0; font-weight: bold;">تایید نشده</span>
+            <td dir="ltr" style="font-family: var(--mono); text-align: right;">
+              <span v-if="user.telegram_id">{{ user.telegram_id }}</span>
+              <span v-else class="text-error" style="font-size: 0.85em;">(ربات استارت نشده)</span>
             </td>
             <td class="action-cell">
               <button 
@@ -101,10 +102,10 @@
         </div>
 
         <div v-if="selectedElection" class="form-layout mt-20" style="align-items: stretch;">
-          <label class="text-dark">۲. لیست رای‌دهندگان را وارد کنید (هر نفر در یک خط، فرمت: <b>آیدی‌تلگرام,نام</b>):</label>
+          <label class="text-dark">۲. لیست رای‌دهندگان را وارد کنید (هر نفر در یک خط، فرمت: <b>یوزرنیم,نام</b>):</label>
           <textarea 
             v-model="bulkInput" 
-            placeholder="12345678, علی احمدی&#n87654321, سارا رضایی" 
+            placeholder="@ali_ahmadi, علی احمدی&#n@sara_rezaei, سارا رضایی" 
             class="input-field full-width"
             style="height: 200px; font-family: var(--mono); direction: ltr; text-align: left;"
           ></textarea>
@@ -244,7 +245,7 @@ const insertBulkVoters = async () => {
     const parts = line.split(',');
     if (parts.length >= 2) {
       parsedVoters.push({
-        telegram_id: parts[0].trim(),
+        username: parts[0].trim(), 
         name: parts[1].trim()
       });
     }

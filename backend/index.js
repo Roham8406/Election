@@ -451,7 +451,7 @@ app.get('/api/admin/elections/:id/voters', authenticateAdmin, requireRole('HR'),
     const electionId = req.params.id;
     try {
         const { rows } = await pool.query(
-            'SELECT id, telegram_id, name, allowed, created_at FROM voters WHERE election_id = $1 ORDER BY created_at DESC', 
+            'SELECT id, telegram_id, username, name, allowed, rejected FROM voters WHERE election_id = $1 ORDER BY created_at DESC', 
             [electionId]
         );
         res.json({ success: true, voters: rows });
@@ -513,22 +513,29 @@ app.post('/api/admin/elections/:id/voters/import', authenticateAdmin, requireRol
         }
 
         await client.query('BEGIN');  
-      
-        
-        for (const voter of voters) {
-            await client.query(`
-                INSERT INTO voters (telegram_id, name, election_id, allowed) 
-                VALUES ($1, $2, $3, TRUE)
-                ON CONFLICT (telegram_id, election_id) 
-                DO UPDATE SET allowed = TRUE, name = EXCLUDED.name
-            `, [voter.telegram_id, voter.name, electionId]);
-        }
+        let addedCount = 0;
 
+        for (const v of voters) {
+            const cleanUsername = v.username.replace('@', '').trim();
+            const botUser = await client.query('SELECT telegram_id FROM bot_users WHERE LOWER(username) = LOWER($1)', [cleanUsername]);
+            const telegramId = botUser.rows.length > 0 ? botUser.rows[0].telegram_id : null;
+
+            try {
+                await client.query(`
+                    INSERT INTO voters (telegram_id, username, name, election_id, allowed) 
+                    VALUES ($1, $2, $3, $4, TRUE)
+                `, [telegramId, cleanUsername, v.name, electionId]);
+                addedCount++;
+            } catch (insertErr) {
+                if (insertErr.code !== '23505') throw insertErr; 
+            }
+        }
+        
         await client.query('COMMIT');
-        res.json({ success: true, message: `${voters.length} کاربر با موفقیت وارد سیستم و تایید شدند.` });
+        res.json({ success: true, message: `${addedCount} کاربر با موفقیت پردازش و اضافه شدند.` });
     } catch (err) {
         await client.query('ROLLBACK');
-        res.status(500).json({ error: 'خطا در ذخیره لیست کاربران دیتابیس' });
+        res.status(500).json({ error: 'خطا در ذخیره لیست کاربران' });
     } finally {
         client.release();
     }
@@ -543,34 +550,27 @@ app.get('/api/admin/bot-users', authenticateAdmin, requireRole('HR'), async (req
         res.status(500).json({ error: 'خطا در دریافت لیست کاربران ربات' });
     }
 });
-
 app.get('/api/admin/manager/elections/:id/check-status', authenticateAdmin, requireRole('Manager'), async (req, res) => {
     const electionId = req.params.id;
-    if (!bot) return res.status(500).json({ error: 'توکن تلگرام در بک‌ند تنظیم نشده است.' });
-
     try {
-        const { rows: voters } = await pool.query('SELECT telegram_id, name FROM voters WHERE election_id = $1 AND allowed = TRUE', [electionId]);
-        if (voters.length === 0) return res.json({ success: true, message: 'هیچ کاربر تایید شده‌ای وجود ندارد.' });
+        const { rows } = await pool.query(`
+            SELECT 
+                COUNT(*) as total_approved,
+                COUNT(telegram_id) as ready_count,
+                COUNT(*) FILTER (WHERE telegram_id IS NULL) as missing_bot_count
+            FROM voters 
+            WHERE election_id = $1 AND allowed = TRUE
+        `, [electionId]);
+        
+        const stats = rows[0];
+        const message = `📊 وضعیت رای‌دهندگان تایید شده در سیستم:
+✅ کل تایید شده‌ها: ${stats.total_approved} نفر
+🟢 آماده دریافت کلید (ربات فعال): ${stats.ready_count} نفر
+🔴 عدم امکان ارسال کلید (ربات استارت نشده): ${stats.missing_bot_count} نفر`;
 
-        let reachable = 0;
-        let blocked = [];
-
-        for (const voter of voters) {
-            try {
-                await bot.sendChatAction(voter.telegram_id, 'typing');
-                reachable++;
-            } catch (err) {
-                blocked.push(voter.name);
-            }
-        }
-
-        const msg = blocked.length > 0 
-            ? `از ${voters.length} کاربر، ${reachable} نفر در دسترس هستند. \n\nافرادی که ربات را متوقف (بلاک) کرده‌اند: ${blocked.join('، ')}`
-            : `عالی! تمام ${voters.length} کاربر تایید شده در دسترس هستند و ربات را مسدود نکرده‌اند.`;
-
-        res.json({ success: true, message: msg });
+        res.json({ success: true, message });
     } catch (err) {
-        res.status(500).json({ error: 'خطا در بررسی وضعیت کاربران' });
+        res.status(500).json({ error: 'خطا در بررسی وضعیت ربات' });
     }
 });
 
@@ -582,11 +582,11 @@ app.post('/api/admin/manager/elections/:id/start', authenticateAdmin, requireRol
     const sentMessages = []; 
     
     try {
-        const votersRes = await client.query('SELECT telegram_id, name FROM voters WHERE election_id = $1 AND allowed = TRUE', [electionId]);
+        const votersRes = await client.query('SELECT telegram_id, name FROM voters WHERE election_id = $1 AND allowed = TRUE AND telegram_id IS NOT NULL', [electionId]);
         let voters = votersRes.rows;
 
         if (voters.length === 0) {
-            return res.status(400).json({ error: 'هیچ کاربر تایید شده‌ای یافت نشد.' });
+            return res.status(400).json({ error: 'هیچ رای‌دهنده تایید شده‌ای که ربات را استارت زده باشد یافت نشد.' });
         }
 
         for (let i = voters.length - 1; i > 0; i--) {

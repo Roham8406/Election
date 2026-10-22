@@ -112,8 +112,8 @@ EXECUTE FUNCTION enforce_max_votes();
 
 INSERT INTO admins (username, password) 
 VALUES 
-    ('manager', '$2b$12$DDXQGp1Ivj2AEyAp0Z1Yqug4uMzQAZoC7Duiv/OKEcrmDdsGPgOYu'),
-    ('hr', '$2b$12$DDXQGp1Ivj2AEyAp0Z1Yqug4uMzQAZoC7Duiv/OKEcrmDdsGPgOYu')
+    ('manager', '$2b$10$TKyZ0htXlnl1HCcOMPgcp.brcO77Hwc9JVezdxOWHE5/S4G7Fz2vG'),
+    ('hr', '$2b$10$nuPwxEnoE5FciJzaodsZ8OZwDKmxPzPz2GmmNstcZE.wuMLwOgesq')
 ON CONFLICT (username) DO NOTHING;
 
 INSERT INTO admin_roles (admin_id, role_id)

@@ -451,7 +451,7 @@ app.get('/api/admin/elections/:id/voters', authenticateAdmin, requireRole('HR'),
     const electionId = req.params.id;
     try {
         const { rows } = await pool.query(
-            'SELECT id, telegram_id, username, name, allowed, rejected FROM voters WHERE election_id = $1 ORDER BY created_at DESC', 
+            'SELECT id, telegram_id, username, name, allowed FROM voters WHERE election_id = $1 ORDER BY created_at DESC', 
             [electionId]
         );
         res.json({ success: true, voters: rows });

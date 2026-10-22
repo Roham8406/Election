@@ -1,5 +1,5 @@
 const express = require('express');
-const cors = require('cors');
+// const cors = require('cors');
 const crypto = require('crypto');
 const { Pool } = require('pg');
 const rateLimit = require('express-rate-limit');
@@ -36,16 +36,16 @@ const strictLimiter = rateLimit({
 app.use('/api/login', strictLimiter);
 app.use('/api/vote', strictLimiter);
 
-const allowedOrigins = (process.env.ALLOWED_ORIGINS).split(',');
-app.use(cors({
-    origin: function(origin, callback) {
-        if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    }
-}));
+// const allowedOrigins = (process.env.ALLOWED_ORIGINS).split(',');
+// app.use(cors({
+//     origin: function(origin, callback) {
+//         if (!origin || allowedOrigins.includes(origin)) {
+//             callback(null, true);
+//         } else {
+//             callback(new Error('Not allowed by CORS'));
+//         }
+//     }
+// }));
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL

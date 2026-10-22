@@ -16,14 +16,23 @@ const userSteps = {};
 
 bot.onText(/\/start/, async (msg) => {
     const chatId = msg.chat.id;
-    
     const telegramId = msg.from.id;
-    const firstName = msg.from.first_name || 'NoFirstName';
-    const lastName = msg.from.last_name || 'NoLastName';
-    const username = msg.from.username || 'NoUsername';
+    const firstName = msg.from.first_name || '';
+    const lastName = msg.from.last_name || '';
+    
+    let rawUsername = msg.from.username;
+    if (!rawUsername) {
+        rawUsername = String(telegramId);
+    }
+    
+    const cleanUsername = rawUsername.replace('@', '').trim();
 
+    const client = await pool.connect();
+    
     try {
-        await pool.query(`
+        await client.query('BEGIN');
+
+        await client.query(`
             INSERT INTO bot_users (telegram_id, first_name, last_name, username) 
             VALUES ($1, $2, $3, $4)
             ON CONFLICT (telegram_id) 
@@ -31,14 +40,25 @@ bot.onText(/\/start/, async (msg) => {
                 first_name = EXCLUDED.first_name,
                 last_name = EXCLUDED.last_name,
                 username = EXCLUDED.username
-        `, [telegramId, firstName, lastName, username]);
+        `, [telegramId, firstName, lastName, cleanUsername]);
 
-        bot.sendMessage(chatId, 'سلام! 👋 \n اکانت شما ثبت شد.');
-        // bot.sendMessage(chatId, 'سلام! 👋\nبرای ثبت‌نام در سامانه رای‌گیری، دستور /register را ارسال کنید.');
+
+        await client.query(`
+            UPDATE voters 
+            SET telegram_id = $1 
+            WHERE LOWER(username) = LOWER($2)
+        `, [telegramId, cleanUsername]);
+
+        await client.query('COMMIT');
+
+        bot.sendMessage(chatId, 'سلام! 👋\nحساب شما با موفقیت در سامانه رای‌گیری همگام‌سازی شد.\n\nبه محض شروع انتخابات از سمت مدیر، کلید رمزنگاری برای شما ارسال خواهد شد.');
         
     } catch (err) {
-        console.error('Error saving user data:', err);
+        await client.query('ROLLBACK');
+        console.error('Error saving user data on /start:', err);
         bot.sendMessage(chatId, '❌ خطایی در ارتباط با سرور رخ داد.');
+    } finally {
+        client.release();
     }
 });
 

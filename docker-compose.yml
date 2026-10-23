@@ -39,7 +39,7 @@ services:
     container_name: election-frontend
     restart: unless-stopped
     ports:
-      - "8081:80"
+      - "443:80"
     depends_on:
       - backend
 

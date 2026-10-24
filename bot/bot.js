@@ -3,8 +3,8 @@ const TelegramBot = require('node-telegram-bot-api');
 const { Pool } = require('pg');
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
-const HR_ID = process.env.HR_ID;
-const MANAGER_ID = process.env.MANAGER_ID;
+// const HR_ID = process.env.HR_ID;
+// const MANAGER_ID = process.env.MANAGER_ID;
 const crypto = require('crypto');
 
 const bot = new TelegramBot(token, { 
@@ -12,7 +12,7 @@ const bot = new TelegramBot(token, {
     baseApiUrl: process.env.TELEGRAM_PROXY_URL
 });
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-const userSteps = {};
+// const userSteps = {};
 
 bot.onText(/\/start/, async (msg) => {
     const chatId = msg.chat.id;
@@ -26,7 +26,6 @@ bot.onText(/\/start/, async (msg) => {
     }
     
     const cleanUsername = rawUsername.replace('@', '').trim();
-
     const client = await pool.connect();
     
     try {
@@ -42,6 +41,42 @@ bot.onText(/\/start/, async (msg) => {
                 username = EXCLUDED.username
         `, [telegramId, firstName, lastName, cleanUsername]);
 
+        const pendingElectionsRes = await client.query(`
+            SELECT v.id AS voter_id, v.election_id, v.name 
+            FROM voters v
+            JOIN elections e ON v.election_id = e.id
+            WHERE LOWER(v.username) = LOWER($1) 
+              AND v.telegram_id IS NULL 
+              AND v.allowed = TRUE 
+              AND e.status = 'Started'
+        `, [cleanUsername]);
+
+        let sentKeysCount = 0;
+
+        for (const row of pendingElectionsRes.rows) {
+            const { publicKey, privateKey } = crypto.generateKeyPairSync('ec', {
+                namedCurve: 'prime256v1',
+                publicKeyEncoding: { type: 'spki', format: 'der' },
+                privateKeyEncoding: { type: 'pkcs8', format: 'der' }
+            });
+
+            const pubKeyHex = publicKey.toString('hex');
+            const privKeyHex = privateKey.toString('hex');
+
+            let inserted = false;
+            while (!inserted) {
+                try {
+                    await client.query('INSERT INTO voter_hashes (hashcode, election_id) VALUES ($1, $2)', [pubKeyHex, row.election_id]);
+                    inserted = true;
+                } catch (err) {
+                    if (err.code !== '23505') throw err;
+                }
+            }
+
+            const msgToVoter = `✅ سلام ${row.name} عزیز!\n\nزمان رای‌گیری فرا رسیده است. برای شرکت در انتخابات از اطلاعات زیر استفاده کنید:\n\n🔑 **کد ورود و ثبت رای (کلید خصوصی):**\n\`${privKeyHex}\`\n\n👁️ **کد رهگیری شما (کلید عمومی):**\n\`${pubKeyHex}\``;
+            await bot.sendMessage(chatId, msgToVoter, { parse_mode: 'Markdown' });
+            sentKeysCount++;
+        }
 
         await client.query(`
             UPDATE voters 
@@ -51,7 +86,11 @@ bot.onText(/\/start/, async (msg) => {
 
         await client.query('COMMIT');
 
-        bot.sendMessage(chatId, 'سلام! 👋\nحساب شما با موفقیت در سامانه رای‌گیری همگام‌سازی شد.\n\nبه محض شروع انتخابات از سمت مدیر، کلید رمزنگاری برای شما ارسال خواهد شد.');
+        if (sentKeysCount === 0) {
+            bot.sendMessage(chatId, 'سلام! 👋\nحساب شما با موفقیت در سامانه رای‌گیری همگام‌سازی شد.\n\nبه محض شروع انتخابات از سمت مدیر، کلید رمزنگاری برای شما ارسال خواهد شد.');
+        } else {
+            bot.sendMessage(chatId, 'سلام! 👋\nحساب شما همگام‌سازی شد و کلیدهای جا مانده برای انتخابات‌های فعال با موفقیت برای شما ارسال گردید.');
+        }
         
     } catch (err) {
         await client.query('ROLLBACK');
@@ -61,7 +100,7 @@ bot.onText(/\/start/, async (msg) => {
         client.release();
     }
 });
-
+/*
 // ==========================================
 // User Register
 // ==========================================
@@ -351,5 +390,6 @@ bot.onText(/\/manage/, async (msg) => {
         bot.sendMessage(chatId, 'خطا در دریافت لیست.');
     }
 });
+*/
 
 console.log('Telegram bot is running...');

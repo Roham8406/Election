@@ -23,14 +23,14 @@ app.set('trust proxy', 1);
 
 const generalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, 
-    max: 100,
+    max: 400,
     message: { error: 'ترافیک شما بیش از حد مجاز است. لطفاً ۱۵ دقیقه دیگر تلاش کنید.' }
 });
 app.use('/api/', generalLimiter);
 
 const strictLimiter = rateLimit({
     windowMs: 5 * 60 * 1000,
-    max: 5,
+    max: 25,
     message: { error: 'تلاش‌های بیش از حد. برای جلوگیری از تقلب، دسترسی شما ۵ دقیقه مسدود شد.' }
 });
 app.use('/api/login', strictLimiter);

@@ -37,9 +37,10 @@ CREATE TABLE IF NOT EXISTS voters (
     election_id UUID NOT NULL REFERENCES elections(id) ON DELETE CASCADE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     allowed BOOLEAN NOT NULL DEFAULT FALSE,
-    username VARCHAR(255) UNIQUE,
+    username VARCHAR(255),
     
-    UNIQUE(telegram_id, election_id)
+    UNIQUE(telegram_id, election_id),
+    UNIQUE(username, election_id)
 );
 
 -- 6. Table for available roles
